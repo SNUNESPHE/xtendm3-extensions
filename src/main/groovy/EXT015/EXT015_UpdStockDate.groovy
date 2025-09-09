@@ -95,7 +95,16 @@ public class UpdStockDate extends ExtendM3Transaction {
    */
   void updateEXT019DAT1(){
     // update the first date in stock if it is the first restock after the waiting period
-    Map<String, String> ext019Params = ['CONO': "${inCONO}".toString(), 'FILE': "${ext019File}".toString(),'WHLO': "${inWHLO}".toString(), 'ITNO': "${inITNO}".toString(), 'DAT1': "${inIDDT}".toString(), 'IDDT':"${inIDDT}".toString(), 'ODDT':"${inODDT}".toString() ]
+    Map<String, String> ext019Params = [
+      'CONO': "${inCONO}".toString(), 
+      'DIVI': "${inDIVI}".toString(),
+      'FILE': "${ext019File}".toString(),
+      'WHLO': "${inWHLO}".toString(), 
+      'ITNO': "${inITNO}".toString(), 
+      'DAT1': "${inIDDT}".toString(), 
+      'IDDT':"${inIDDT}".toString(), 
+      'ODDT':"${inODDT}".toString() 
+    ]
     if(!miCaller.call('EXT019MI', 'UpdItem', ext019Params,{})){
       mi.error("Item/Warehouse not found for params:  ${ext019Params} on updateEXT019DAT1")
       return
@@ -110,7 +119,16 @@ public class UpdStockDate extends ExtendM3Transaction {
   void updateEXT019DAT2(int date){
     // update the date when the stock of the article became zero
     //update on the level item/warehouse
-    Map<String, String> ext019Params = ['CONO': "${inCONO}".toString(), 'FILE': "${ext019File}".toString(),'WHLO': "${inWHLO}".toString(), 'ITNO': "${inITNO}".toString(), 'DAT2': "${date}".toString(), 'IDDT':"${inIDDT}".toString(), 'ODDT':"${inODDT}".toString() ]
+    Map<String, String> ext019Params = [
+      'CONO': "${inCONO}".toString(),
+      'DIVI': "${inDIVI}".toString(),
+      'FILE': "${ext019File}".toString(),
+      'WHLO': "${inWHLO}".toString(), 
+      'ITNO': "${inITNO}".toString(), 
+      'DAT2': "${date}".toString(), 
+      'IDDT':"${inIDDT}".toString(), 
+      'ODDT':"${inODDT}".toString() 
+    ]
     if(!miCaller.call('EXT019MI', 'UpdItem', ext019Params, {})){
       mi.error("Item/Warehouse not found for params:  ${ext019Params} on updateEXT019DAT2")
       return
@@ -150,6 +168,7 @@ public class UpdStockDate extends ExtendM3Transaction {
     //update on the level item/division
     Map<String, String> ext017Params = [
       'CONO': "${inCONO}".toString(), 
+      'DIVI': "${inDIVI}".toString(),
       'FILE': "${ext017File}".toString(),
       'ITNO': "${inITNO}".toString(), 
       'CONT':"${increCounter}".toString(), 
@@ -172,6 +191,7 @@ public class UpdStockDate extends ExtendM3Transaction {
     //update on the level item/division
     Map<String, String> ext017Params = [
       'CONO': "${inCONO}".toString(), 
+      'DIVI': "${inDIVI}".toString(),
       'FILE': "${ext017File}".toString(),
       'ITNO': "${inITNO}".toString(), 
       'DAT1':"${currentDate}".toString(), 
@@ -194,6 +214,7 @@ public class UpdStockDate extends ExtendM3Transaction {
     //update on the level item/division
     Map<String, String> ext017Params = [
       'CONO': "${inCONO}".toString(), 
+      'DIVI': "${inDIVI}".toString(),
       'FILE': "${ext017File}".toString(),
       'ITNO': "${inITNO}".toString(), 
       'DAT2':"${currentDate}".toString(), 
@@ -215,7 +236,8 @@ public class UpdStockDate extends ExtendM3Transaction {
   void updateEXT018DAT1(int currentDate){
     // update the first date in stock if it is the first restock after the waiting period
     Map<String, String> ext018Params = [
-      'CONO': "${inCONO}".toString(), 
+      'CONO': "${inCONO}".toString(),
+      'DIVI': "${inDIVI}".toString(),
       'FILE': "${ext018File}".toString(),
       'FACI': "${inFACI}".toString(), 
       'ITNO': "${inITNO}".toString(), 
@@ -252,7 +274,13 @@ public class UpdStockDate extends ExtendM3Transaction {
    */
   void getEXT019Dates(){
     // get the date when the stock become null
-    Map<String, String> ext019Params = ['CONO': "${inCONO}".toString(), 'FILE': "${ext019File}".toString(),'WHLO': "${inWHLO}".toString(), 'ITNO': "${inITNO}".toString()]
+    Map<String, String> ext019Params = [
+      'CONO': "${inCONO}".toString(),
+      'DIVI': "${inDIVI}".toString(),
+      'FILE': "${ext019File}".toString(),
+      'WHLO': "${inWHLO}".toString(),
+      'ITNO': "${inITNO}".toString()
+    ]
     miCaller.call('EXT019MI', 'GetItem', ext019Params, { Map<String, String> response ->
       int exDAT1 = response.DAT1 as int
       int exDAT2 = response.DAT2 as int
@@ -287,6 +315,7 @@ public class UpdStockDate extends ExtendM3Transaction {
     // get the date when the stock become null
     Map<String, String> ext017Params = [
       'CONO': "${inCONO}".toString(), 
+      'DIVI': "${inDIVI}".toString(),
       'FILE': "${ext017File}".toString(),
       'ITNO': "${inITNO}".toString()
     ]
@@ -333,6 +362,17 @@ public class UpdStockDate extends ExtendM3Transaction {
       inCONO = (Integer) program.getLDAZD().CONO
     } else {
       inCONO = mi.in.get('CONO') as int
+    }
+
+    // Handling Division
+    if (mi.in.get('DIVI') != null) {
+      inDIVI = mi.in.get('DIVI') as String
+      if(!validateDIVI(inCONO, inDIVI)){
+        return false
+      }
+    }else{
+      mi.error("La division est obligatoire")
+      return false
     }
 
     // Handling Warehouse
@@ -443,5 +483,21 @@ public class UpdStockDate extends ExtendM3Transaction {
     } catch (DateTimeParseException e) {
       return false
     }
+  }
+
+  /**
+   * Validate the Division (DIVI) against the CMNDIV table.
+   * @return true if valid, false otherwise
+   */
+  private boolean validateDIVI(int cono, String divi) {
+    DBAction dbaCMNDIV = database.table("CMNDIV").index("00").build()
+    DBContainer conCMNDIV = dbaCMNDIV.getContainer()
+    conCMNDIV.set("CCCONO", cono)
+    conCMNDIV.set("CCDIVI", divi)
+    if (!dbaCMNDIV.read(conCMNDIV)){
+      mi.error("Division: " + divi.toString() + " does not exist in Company " + cono)
+      return false
+    }
+    return true
   }
 }
