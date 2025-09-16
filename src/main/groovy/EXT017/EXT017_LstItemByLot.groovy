@@ -66,20 +66,20 @@ public class LstItemByLot extends ExtendM3Transaction {
     container.set("EXDIVI", inDIVI)
 
     // Collect all EXT017 items first
-    List<Map<String, Object>> ext017Items = []
+    List<Map<String, String>> ext017Items = []
     boolean found = query.readAll(container, nrOfKeys, maxRecords, { DBContainer dbContainer ->
-      Map<String, Object> item = [
-        "EXCONO": dbContainer.get("EXCONO"),
-        "EXDIVI": dbContainer.get("EXDIVI"),
-        "EXFILE": dbContainer.get("EXFILE"),
-        "EXITNO": dbContainer.get("EXITNO"),
-        "EXDAT1": dbContainer.get("EXDAT1"),
-        "EXDAT2": dbContainer.get("EXDAT2"),
-        "EXLMDT": dbContainer.get("EXLMDT"),
-        "EXRGDT": dbContainer.get("EXRGDT"),
-        "EXRGTM": dbContainer.get("EXRGTM"),
-        "EXCHID": dbContainer.get("EXCHID"),
-        "EXCHNO": dbContainer.get("EXCHNO")
+      Map<String, String> item = [
+        "EXCONO": dbContainer.get("EXCONO") as String,
+        "EXDIVI": dbContainer.get("EXDIVI") as String,
+        "EXFILE": dbContainer.get("EXFILE") as String,
+        "EXITNO": dbContainer.get("EXITNO") as String,
+        "EXDAT1": dbContainer.get("EXDAT1") as String,
+        "EXDAT2": dbContainer.get("EXDAT2") as String,
+        "EXLMDT": dbContainer.get("EXLMDT") as String,
+        "EXRGDT": dbContainer.get("EXRGDT") as String,
+        "EXRGTM": dbContainer.get("EXRGTM") as String,
+        "EXCHID": dbContainer.get("EXCHID") as String,
+        "EXCHNO": dbContainer.get("EXCHNO") as String
       ]
       ext017Items.add(item)
     })
@@ -96,12 +96,12 @@ public class LstItemByLot extends ExtendM3Transaction {
     fetchMITBALRecords(itemNumbers, inCONO)
 
     // Now process each EXT017 item
-    for (Map<String, Object> item : ext017Items) {
+    for (Map<String, String> item : ext017Items) {
       outData(item)
     }
   }
 
-  void outData(Map<String, Object> item) {
+  void outData(Map<String, String> item) {
     String itemNumber = item["EXITNO"] as String
     getMonthSold(itemNumber, inCONO)
     double rotationRate = getRotationRate(itemNumber)
@@ -109,7 +109,7 @@ public class LstItemByLot extends ExtendM3Transaction {
     mi.outData.put("CONO", item["EXCONO"] as String)
     mi.outData.put("DIVI", item["EXDIVI"] as String)
     mi.outData.put("FILE", item["EXFILE"] as String)
-    mi.outData.put("ITNO", item["EXITNO"] as String)
+    mi.outData.put("ITNO", itemNumber)
     mi.outData.put("DAT1", item["EXDAT1"] as String)
     mi.outData.put("DAT2", item["EXDAT2"] as String)
     mi.outData.put("LMDT", item["EXLMDT"] as String)
@@ -283,7 +283,7 @@ public class LstItemByLot extends ExtendM3Transaction {
     double quantityInHand = 0.0
     // Use Groovy's sum method for better performance and readability
     for (Map<String, Double> record : mitbalRecords) {
-      double qty = record["MBSTQT"] ?: 0.0
+      double qty = record["MBSTQT"] ?: 0
       if (qty > 0) {
       quantityInHand += qty
       }

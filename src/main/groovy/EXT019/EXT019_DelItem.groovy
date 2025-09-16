@@ -60,7 +60,6 @@ public class DelItem extends ExtendM3Transaction {
         lockedResult.delete()
       })
     })
-
   }
 
   /**

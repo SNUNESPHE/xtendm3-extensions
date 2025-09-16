@@ -39,7 +39,17 @@ public class LstRotRule extends ExtendM3Transaction {
     if (!validateInputVariables()) {
       return
     }
-    // get the current date
+    ExpressionFactory expression = database.getExpressionFactory("EXT016");
+    expression = expression.eq("EXCONO", String.valueOf(inCONO))
+    if(inDIVI != null && !inDIVI.isEmpty()){
+      expression = expression.and(expression.eq("EXDIVI", inDIVI))
+    }
+    if(inFACI != null && !inFACI.isEmpty()){
+      expression = expression.and(expression.eq("EXFACI", inFACI))
+    }
+    if(inMNTH != null && inMNTH > 0){
+      expression = expression.and(expression.eq("EXMNTH", String.valueOf(inMNTH)))
+    }
     int nrOfKeys = 1
     DBAction query = database.table("EXT015")
       .index("00")
@@ -48,18 +58,6 @@ public class LstRotRule extends ExtendM3Transaction {
     DBContainer container = query.getContainer()
     // insert the inputs into the container
     container.setInt("EXCONO", inCONO)
-    if(inDIVI) {
-      container.setString("EXDIVI", inDIVI)
-      nrOfKeys++
-    }
-    if(inFACI) {
-      container.setString("EXFACI", inFACI)
-      nrOfKeys++
-    }
-    if(inMNTH) {
-      container.setInt("EXMNTH", inMNTH)
-      nrOfKeys++
-    }
     query.readAll(container, nrOfKeys,maxRecords, { DBContainer dbContainer ->
       mi.outData.put("CONO", dbContainer.get("EXCONO") as String)
       mi.outData.put("DIVI", dbContainer.get("EXDIVI") as String)
