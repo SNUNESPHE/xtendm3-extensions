@@ -10,6 +10,7 @@
  Name                       Date             Version          Description of Changes
  Tovonirina ANDRIANARIELO   2025-01-22       1.0              Initial Release
  Tovonirina ANDRIANARIELO   2025-09-08       1.1              XtendM3 validation
+ Tovonirina ANDRIANARIELO   2025-09-22       1.2              XtendM3 validation, use indexes
 ******************************************************************************************/
 public class LstItem extends ExtendM3Transaction {
   private final MIAPI mi
@@ -30,32 +31,50 @@ public class LstItem extends ExtendM3Transaction {
   }
 
   public void main() {
+    String index = "00"
+    int nrOfKeys = 2
     maxRecords = mi.getMaxRecords() <= 0 || mi.getMaxRecords() >= 10000 ? 10000: mi.getMaxRecords()
     // validate input variables
     if (!validateInputVariables()) {
       return
     }
-    ExpressionFactory expression = database.getExpressionFactory("EXT019");
-    expression = expression.eq("EXCONO", String.valueOf(inCONO))
-    expression = expression.and(expression.eq("EXFILE", inFILE))  
-    if(inDIVI != null && !inDIVI.isEmpty()){
-      expression = expression.and(expression.eq("EXDIVI", inDIVI))
+
+    // Cache validation results to avoid repeated function calls
+    boolean hasDIVI = validateField(inDIVI)
+    boolean hasWHLO = validateField(inWHLO)
+    boolean hasITNO = validateField(inITNO)
+
+    // Determine index based on field combinations
+    if (hasDIVI && !hasWHLO && hasITNO) {
+      index = "10"
+    } else if (hasWHLO) {
+      index = "20"
+    } else if (hasITNO) {
+      index = "30"
     }
-    if(inWHLO != null && !inWHLO.isEmpty()){
-      expression = expression.and(expression.eq("EXWHLO", inWHLO))
-    }
-    if(inITNO != null && !inITNO.isEmpty()){
-      expression = expression.and(expression.eq("EXITNO", inITNO))
-    }
-    int nrOfKeys = 1
+   
     DBAction query = database.table("EXT019")
-      .index("00")
-      .matching(expression)
+      .index(index)
       .selection("EXCONO", "EXWHLO", "EXITNO", "EXFILE","EXDAT1","EXDAT2","EXIDDT", "EXODDT","EXRGDT","EXRGTM","EXCHID","EXCHNO","EXLMDT")
       .build()
 
     DBContainer container = query.getContainer()
     container.set("EXCONO", inCONO)
+    container.set("EXFILE", inFILE)
+     // Count the number of keys
+    if (hasDIVI) {
+      nrOfKeys++
+      container.set("EXDIVI", inDIVI)
+    }
+    if (hasWHLO) {
+      nrOfKeys++
+      container.set("EXWHLO", inWHLO)
+    }
+    if (hasITNO) {
+      nrOfKeys++
+      container.set("EXITNO", inITNO)
+    }
+
     if(!query.readAll(container, nrOfKeys, maxRecords,outData)){
       mi.error("No data found")
       return
@@ -78,6 +97,18 @@ public class LstItem extends ExtendM3Transaction {
     mi.outData.put("CHNO", dbContainer.get("EXCHNO") as String)
     mi.outData.put("LMDT", dbContainer.get("EXLMDT") as String)
     mi.write()
+  }
+
+  /**
+   * @description - Validates a field
+   * @params - fieldValue
+   * @returns - true/false
+   */
+  boolean validateField(String fieldValue) {
+    if (fieldValue == null || fieldValue.isEmpty()) {
+      return false
+    }
+    return true
   }
 
   /**
