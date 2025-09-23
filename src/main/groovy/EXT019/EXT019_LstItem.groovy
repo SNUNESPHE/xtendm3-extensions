@@ -45,13 +45,15 @@ public class LstItem extends ExtendM3Transaction {
     boolean hasITNO = validateField(inITNO)
 
     // Determine index based on field combinations
-    if (hasDIVI && !hasWHLO && hasITNO) {
-      index = "10"
-    } else if (hasWHLO) {
-      index = "20"
-    } else if (hasITNO) {
-      index = "30"
-    }
+    if (hasDIVI) {
+      if(!hasWHLO && hasITNO) index = "10"
+    } else{
+      if (hasWHLO) {
+        index = "20"
+      } else if (hasITNO) {
+        index = "30"
+      }
+    } 
    
     DBAction query = database.table("EXT019")
       .index(index)
