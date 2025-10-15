@@ -6,8 +6,7 @@
  * Description : Update depreciation
  * Date         Changed By   Description
  * 20240910     ARNREN       5190 - Ecran de gestion de la décote
- * 20241204     ARNREN       MMS850MI.AddReclass handling added
- */
+ * 20241204     ARNREN       MMS850MI.AddReclass handling added*/
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -147,15 +146,13 @@ public class UpdDepreciation extends ExtendM3Transaction {
 
             // Check transaction type
             ttyp = MITTRA.get("MTTTYP")
-            if (ttyp != 93)
-                return
+            if (ttyp != 93) return
 
             logger.debug("TTYP OK - ttyp = " + ttyp)
 
             // Check receiving number
             repn = MITTRA.get("MTREPN")
-            if (repn == 0)
-                return
+            if (repn == 0) return
 
             logger.debug("REPN OK - repn = " + repn)
 
@@ -175,8 +172,7 @@ public class UpdDepreciation extends ExtendM3Transaction {
             logger.debug("OCLINE OK - rscdOCLINE = " + rscdOCLINE)
             logger.debug("OCLINE OK - sapr = " + sapr)
 
-            if (rscdOCLINE.trim() != pk03.trim())
-                return
+            if (rscdOCLINE.trim() != pk03.trim()) return
 
             logger.debug("rscdOCLINE = pk03 OK")
 
@@ -210,8 +206,7 @@ public class UpdDepreciation extends ExtendM3Transaction {
         mi.write()
     }
     // Retrieve CUGEX1
-    Closure<?> outDataCUGEX1 = { DBContainer CUGEX1 ->
-        pk03 = CUGEX1.get("F1PK03")
+    Closure<?> outDataCUGEX1 = { DBContainer CUGEX1 -> pk03 = CUGEX1.get("F1PK03")
     }
 
     // Retrieve CUGEX1
