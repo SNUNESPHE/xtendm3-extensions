@@ -1,11 +1,15 @@
-/**
- * README
+/************************************************************************************************************************************************
+ Extension Name: EXT490
+ Type: ExtendM3Batch
+ Script Author: YJANNIN
+ Date: 2024-08-19
+ Description:
+ * Automatic generation of credit note
  * This extension is used by Mashup
- * Name : EXT490
- * Description :
- * Date         Changed By   Description
- * 20240819     YJANNIN      5116 - Automatic generation of credit note
- */
+ Revision History:
+ Name          Date        Version   Description of Changes
+ YJANNIN       2024-08-19  1.0       5116 - Automatic generation of credit note
+ **************************************************************************************************************************************************/
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -26,37 +30,37 @@ public class EXT490 extends ExtendM3Batch {
   private int endIndex
   private boolean IN60
   private String jobNumber
-  private Integer nbMaxRecord = 10000
+  private Integer NB_MAX_RECORD = 10000
   private Integer currentDate
   private Integer counter
 
-  private String FACI
+  private String faci
   private String savedORNO
-  private double SAPR
-  private double cSAPR
-  private long REPN
-  private Integer RELI
-  private String CUNO
-  private String ORTP
-  private Integer REOC
-  private Integer YEA4
-  private String EXIN
-  private String RXIN
-  private String DIVI
-  private String ITNO
-  private String REST
-  private String RSCD
-  private String rscdOCLINE
-  private String rscdMITTRA
-  private String RIDN
+  private double sapr
+  private double cSapr
+  private long repn
+  private Integer reli
+  private String cuno
+  private String ortp
+  private Integer reoc
+  private Integer yea4
+  private String exin
+  private String rxin
+  private String divi
+  private String itno
+  private String rest
+  private String rscd
+  private String rscdOcline
+  private String rscdMittra
+  private String ridn
   private boolean decote
   private boolean createdline
-  private double TRQT
-  private double REQT
-  private double REQ3
-  private double REQ4
-  private double REQ5
-  private double REQ7
+  private double trqt
+  private double reqt
+  private double req3
+  private double req4
+  private double req5
+  private double req7
   private boolean flagReq3
   private boolean flagReq5
   private double reclassCost
@@ -66,10 +70,10 @@ public class EXT490 extends ExtendM3Batch {
   private boolean xFirst
   private boolean xDebug
 
-  private String LOW
-  private String HIGH
-  private Integer CLOW
-  private Integer CHIGH
+  private String low
+  private String high
+  private Integer clow
+  private Integer chigh
 
   private String inWHLO
   private String inRES1
@@ -155,15 +159,15 @@ public class EXT490 extends ExtendM3Batch {
 
     xDebug = false
 
-    ORTP = " "
+    ortp = " "
     DBAction queryOREPAR = database.table("OREPAR").index("00").selection("OEORTP").build()
     DBContainer OREPAR = queryOREPAR.getContainer()
     OREPAR.set("OECONO",currentCompany)
     OREPAR.set("OEWHLO",inWHLO)
     if (queryOREPAR.read(OREPAR)){
-      ORTP = OREPAR.get("OEORTP")
+      ortp = OREPAR.get("OEORTP")
     }
-    logger.debug("ORTP = " + ORTP)
+    logger.debug("ORTP = " + ortp)
     logger.debug("WHLO = " + inWHLO)
     logger.debug("from CUNO = " + inCUNF)
     logger.debug("to CUNO = " + inCUNT)
@@ -177,7 +181,7 @@ public class EXT490 extends ExtendM3Batch {
       OCHEAD10.set("OCCONO", currentCompany)
       OCHEAD10.set("OCWHLO", inWHLO)
       OCHEAD10.set("OCCUNO", inCUNF)
-      if(!queryOCHEAD10.readAll(OCHEAD10, 3, nbMaxRecord, outDataOCHEAD10)){
+      if(!queryOCHEAD10.readAll(OCHEAD10, 3, NB_MAX_RECORD, outDataOCHEAD10)){
         logger.debug("L'enregistrement OCHEAD10 n'existe pas donc pas de client")
         return
       }
@@ -193,7 +197,7 @@ public class EXT490 extends ExtendM3Batch {
       DBContainer OCHEAD00 = queryOCHEAD00.getContainer()
       OCHEAD00.set("OCCONO", currentCompany)
       OCHEAD00.set("OCWHLO", inWHLO)
-      if(!queryOCHEAD00.readAll(OCHEAD00, 2, nbMaxRecord, outDataOCHEAD00)){
+      if(!queryOCHEAD00.readAll(OCHEAD00, 2, NB_MAX_RECORD, outDataOCHEAD00)){
         logger.debug("L'enregistrement OCHEAD00 n'existe pas donc pas de client")
         return
       }
@@ -206,29 +210,29 @@ public class EXT490 extends ExtendM3Batch {
   Closure<?> outDataOCHEAD10 = { DBContainer OCHEAD10 ->
     logger.debug("Lecture OCHEAD10 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     savedORNO = " "
-    DIVI = ""
-    FACI = OCHEAD10.get("OCFACI")
+    divi = ""
+    faci = OCHEAD10.get("OCFACI")
     DBAction queryCFACIL = database.table("CFACIL").index("00").selection("CFDIVI").build()
     DBContainer CFACIL = queryCFACIL.createContainer()
     CFACIL.set("CFCONO",currentCompany)
-    CFACIL.set("CFFACI", FACI)
+    CFACIL.set("CFFACI", faci)
     if (queryCFACIL.read(CFACIL)){
-      DIVI = CFACIL.getString("CFDIVI")
+      divi = CFACIL.getString("CFDIVI")
     }
-    CUNO = OCHEAD10.get("OCCUNO")
-    REOC = OCHEAD10.get("OCREOC") as Integer
-    REPN = OCHEAD10.get("OCREPN") as long
-    YEA4 = OCHEAD10.get("OCYEA4") as Integer
-    EXIN = OCHEAD10.get("OCEXIN")
+    cuno = OCHEAD10.get("OCCUNO")
+    reoc = OCHEAD10.get("OCREOC") as Integer
+    repn = OCHEAD10.get("OCREPN") as long
+    yea4 = OCHEAD10.get("OCYEA4") as Integer
+    exin = OCHEAD10.get("OCEXIN")
     String oRESL = OCHEAD10.get("OCRESL")
     Integer oCRSB = OCHEAD10.get("OCCRSB") as Integer
-    logger.debug("FACI = " + FACI)
-    logger.debug("DIVI = " + DIVI)
-    logger.debug("CUNO = " + CUNO)
-    logger.debug("REOC = " + REOC)
-    logger.debug("REPN = " + REPN)
-    logger.debug("YEA4 = " + YEA4)
-    logger.debug("EXIN = " + EXIN)
+    logger.debug("FACI = " + faci)
+    logger.debug("DIVI = " + divi)
+    logger.debug("CUNO = " + cuno)
+    logger.debug("REOC = " + reoc)
+    logger.debug("REPN = " + repn)
+    logger.debug("YEA4 = " + yea4)
+    logger.debug("EXIN = " + exin)
     logger.debug("RESL = " + oRESL)
     logger.debug("CRSB = " + oCRSB)
     if(oCRSB == 0 || oCRSB == 1){
@@ -253,33 +257,33 @@ public class EXT490 extends ExtendM3Batch {
     if(xDebug){
       logger.debug("Lecture OCHEAD00 " + counter + " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     }
-    CUNO = OCHEAD00.get("OCCUNO")
-    FACI = OCHEAD00.get("OCFACI")
-    REOC = OCHEAD00.get("OCREOC") as Integer
-    REPN = OCHEAD00.get("OCREPN") as long
-    YEA4 = OCHEAD00.get("OCYEA4") as Integer
-    EXIN = OCHEAD00.get("OCEXIN")
+    cuno = OCHEAD00.get("OCCUNO")
+    faci = OCHEAD00.get("OCFACI")
+    reoc = OCHEAD00.get("OCREOC") as Integer
+    repn = OCHEAD00.get("OCREPN") as long
+    yea4 = OCHEAD00.get("OCYEA4") as Integer
+    exin = OCHEAD00.get("OCEXIN")
     String oRESL = OCHEAD00.get("OCRESL")
     Integer oCRSB = OCHEAD00.get("OCCRSB") as Integer
     if(xDebug) {
-      logger.debug("FACI = " + FACI)
-      logger.debug("DIVI = " + DIVI)
-      logger.debug("CUNO = " + CUNO)
-      logger.debug("REOC = " + REOC)
-      logger.debug("REPN = " + REPN)
-      logger.debug("YEA4 = " + YEA4)
-      logger.debug("EXIN = " + EXIN)
+      logger.debug("FACI = " + faci)
+      logger.debug("DIVI = " + divi)
+      logger.debug("CUNO = " + cuno)
+      logger.debug("REOC = " + reoc)
+      logger.debug("REPN = " + repn)
+      logger.debug("YEA4 = " + yea4)
+      logger.debug("EXIN = " + exin)
       logger.debug("RESL = " + oRESL)
       logger.debug("CRSB = " + oCRSB)
     }
     savedORNO = " "
-    DIVI = ""
+    divi = ""
     DBAction queryCFACIL = database.table("CFACIL").index("00").selection("CFDIVI").build()
     DBContainer CFACIL = queryCFACIL.createContainer()
     CFACIL.set("CFCONO",currentCompany)
-    CFACIL.set("CFFACI", FACI)
+    CFACIL.set("CFFACI", faci)
     if (queryCFACIL.read(CFACIL)){
-      DIVI = CFACIL.getString("CFDIVI")
+      divi = CFACIL.getString("CFDIVI")
     }
     if(oCRSB == 0 || oCRSB == 1){
       lectureOCLINE()
@@ -297,8 +301,8 @@ public class EXT490 extends ExtendM3Batch {
     DBContainer OCLINE = queryOCLINE.getContainer()
     OCLINE.set("ODCONO",currentCompany)
     OCLINE.set("ODWHLO",inWHLO)
-    OCLINE.set("ODREPN",REPN)
-    if (!queryOCLINE.readAll(OCLINE, 3, nbMaxRecord, outDataOCLINE)){
+    OCLINE.set("ODREPN",repn)
+    if (!queryOCLINE.readAll(OCLINE, 3, NB_MAX_RECORD, outDataOCLINE)){
 
     }
     if(savedORNO != " "){
@@ -317,71 +321,71 @@ public class EXT490 extends ExtendM3Batch {
     if(xDebug) {
       logger.debug("Lecture OCLINE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     }
-    REST = OCLINE.get("ODREST")
-    if((inRES1==REST && inRES1!=" ") || (inRES2==REST && inRES2!=" ") || (inRES3==REST && inRES3!=" ") ||
-      (inRES2==REST && inRES2!=" ") || (inRES3==REST && inRES3!=" ")){
+    rest = OCLINE.get("ODREST")
+    if((inRES1==rest && inRES1!=" ") || (inRES2==rest && inRES2!=" ") || (inRES3==rest && inRES3!=" ") ||
+      (inRES2==rest && inRES2!=" ") || (inRES3==rest && inRES3!=" ")){
       createdline = false
-      RELI = OCLINE.get("ODRELI") as Integer
-      rscdOCLINE = OCLINE.get("ODRSCD")
-      ITNO = OCLINE.get("ODITNO")
-      SAPR = OCLINE.get("ODSAPR") as double
+      reli = OCLINE.get("ODRELI") as Integer
+      rscdOcline = OCLINE.get("ODRSCD")
+      itno = OCLINE.get("ODITNO")
+      sapr = OCLINE.get("ODSAPR") as double
       reclassCost = OCLINE.get("ODUCOS") as double
-      REQ3 = OCLINE.get("ODREQ3") as double
-      REQ4 = OCLINE.get("ODREQ4") as double
-      REQ5 = OCLINE.get("ODREQ5") as double
+      req3 = OCLINE.get("ODREQ3") as double
+      req4 = OCLINE.get("ODREQ4") as double
+      req5 = OCLINE.get("ODREQ5") as double
       double oREQ6 = OCLINE.get("ODREQ6") as double
-      REQ7 = OCLINE.get("ODREQ7") as double
-      REQT = REQ3 + REQ4 - REQ7
+      req7 = OCLINE.get("ODREQ7") as double
+      reqt = req3 + req4 - req7
       if(xDebug) {
-        logger.debug("REST = " + REST)
-        logger.debug("RELI = " + RELI)
-        logger.debug("RSCD OCLINE= " + rscdOCLINE)
-        logger.debug("ITNO = " + ITNO)
-        logger.debug("SAPR = " + SAPR)
+        logger.debug("REST = " + rest)
+        logger.debug("RELI = " + reli)
+        logger.debug("RSCD OCLINE= " + rscdOcline)
+        logger.debug("ITNO = " + itno)
+        logger.debug("SAPR = " + sapr)
         logger.debug("UCOS= " + reclassCost)
-        logger.debug("REQ3 = " + REQ3)
-        logger.debug("REQ4 = " + REQ4)
-        logger.debug("REQ5 = " + REQ5)
+        logger.debug("REQ3 = " + req3)
+        logger.debug("REQ4 = " + req4)
+        logger.debug("REQ5 = " + req5)
         logger.debug("REQ6 = " + oREQ6)
-        logger.debug("REQ7 = " + REQ7)
-        logger.debug("REQT = " + REQT)
+        logger.debug("REQ7 = " + req7)
+        logger.debug("REQT = " + reqt)
       }
       convertREPNtoRIDN()
       if(xDebug) {
-        logger.debug("RIDN = " + RIDN)
+        logger.debug("RIDN = " + ridn)
       }
 
-      if(REQT>0){
+      if(reqt>0){
         inzFldOCLINE()
       }
-      TRQT = 0
+      trqt = 0
       DBAction queryMITTRA = database.table("MITTRA").index("30").selection("MTTRQT", "MTTRDT", "MTATNB", "MTTRPR", "MTRSCD").build()
       DBContainer MITTRA = queryMITTRA.getContainer()
       MITTRA.set("MTCONO",currentCompany)
       MITTRA.set("MTTTYP",93)
-      MITTRA.set("MTRIDN", RIDN)
-      MITTRA.set("MTRIDL", RELI)
-      if (!queryMITTRA.readAll(MITTRA, 4, nbMaxRecord,  outDataMITTRA)){
+      MITTRA.set("MTRIDN", ridn)
+      MITTRA.set("MTRIDL", reli)
+      if (!queryMITTRA.readAll(MITTRA, 4, NB_MAX_RECORD,  outDataMITTRA)){
 
       }
       if(xDebug) {
-        logger.debug("avant TRQT = " + TRQT)
-        logger.debug("REQ7 = " + REQ7)
+        logger.debug("avant TRQT = " + trqt)
+        logger.debug("REQ7 = " + req7)
       }
-      TRQT = TRQT - REQ7
+      trqt = trqt - req7
       if(xDebug) {
-        logger.debug("après TRQT = " + TRQT)
+        logger.debug("après TRQT = " + trqt)
       }
-      if(TRQT > 0 && REQT>0){
+      if(trqt > 0 && reqt>0){
         DBAction queryCUGEX1 = database.table("CUGEX1").index("00").build()
         DBContainer CUGEX1 = queryCUGEX1.getContainer()
         CUGEX1.set("F1CONO", currentCompany)
         CUGEX1.set("F1FILE", "DECOTE")
-        CUGEX1.set("F1PK01", DIVI)
+        CUGEX1.set("F1PK01", divi)
         CUGEX1.set("F1PK02", "2")
-        CUGEX1.set("F1PK03", rscdOCLINE)
-        CUGEX1.set("F1PK04", rscdMITTRA)
-        if (!queryCUGEX1.readAll(CUGEX1, 6, nbMaxRecord, outDataCUGEX1)) {
+        CUGEX1.set("F1PK03", rscdOcline)
+        CUGEX1.set("F1PK04", rscdMittra)
+        if (!queryCUGEX1.readAll(CUGEX1, 6, NB_MAX_RECORD, outDataCUGEX1)) {
           decote = false
         }
         if(savedORNO==" "){
@@ -401,8 +405,8 @@ public class EXT490 extends ExtendM3Batch {
 
   // convert REPN to RIDN
   private void convertREPNtoRIDN(){
-    String oRIDN = REPN
-    RIDN = oRIDN.padLeft(10, '0')
+    String oRIDN = repn
+    ridn = oRIDN.padLeft(10, '0')
   }
 
   // Update statut
@@ -411,69 +415,69 @@ public class EXT490 extends ExtendM3Batch {
       logger.debug("Update Statut")
     }
     xFirst = false
-    DIVI = " "
-    RXIN = " "
+    divi = " "
+    rxin = " "
     DBAction queryOCLINE80 = database.table("OCLINE").index("80").selection("ODREST").build()
     DBContainer OCLINE80 = queryOCLINE80.getContainer()
     OCLINE80.set("ODCONO",currentCompany)
     OCLINE80.set("ODWHLO",inWHLO)
-    OCLINE80.set("ODREPN",REPN)
-    if (!queryOCLINE80.readAll(OCLINE80, 3, nbMaxRecord, outDataOCLINE80)){
+    OCLINE80.set("ODREPN",repn)
+    if (!queryOCLINE80.readAll(OCLINE80, 3, NB_MAX_RECORD, outDataOCLINE80)){
 
     }
 
     if(xFirst==false){
-      LOW = "05"
-      HIGH = "05"
-      CLOW = 0
-      CHIGH = 0
+      low = "05"
+      high = "05"
+      clow = 0
+      chigh = 0
     } else {
       xFirst = false
       DBAction queryOCLINE30 = database.table("OCLINE").index("30").selection("ODCRES").build()
       DBContainer OCLINE30 = queryOCLINE30.getContainer()
       OCLINE30.set("ODCONO",currentCompany)
       OCLINE30.set("ODWHLO",inWHLO)
-      OCLINE30.set("ODREPN",REPN)
-      if (!queryOCLINE30.readAll(OCLINE30, 3, nbMaxRecord, outDataOCLINE30)){
+      OCLINE30.set("ODREPN",repn)
+      if (!queryOCLINE30.readAll(OCLINE30, 3, NB_MAX_RECORD, outDataOCLINE30)){
 
       }
     }
 
-    if (EXIN != "" && YEA4 != 0){
+    if (exin != "" && yea4 != 0){
       DBAction queryCFACIL = database.table("CFACIL").index("00").selection("CFDIVI").build()
       DBContainer CFACIL = queryCFACIL.createContainer()
       CFACIL.set("CFCONO",currentCompany)
-      CFACIL.set("CFFACI", FACI)
+      CFACIL.set("CFFACI", faci)
       if (queryCFACIL.read(CFACIL)){
-        DIVI = CFACIL.getString("CFDIVI")
+        divi = CFACIL.getString("CFDIVI")
       }
 
       DBAction queryOINVOH = database.table("OINVOH").index("91").selection("UHRXIN").build()
       DBContainer OINVOH = queryOINVOH.getContainer()
       OINVOH.set("UHCONO",currentCompany)
-      OINVOH.set("UHDIVI",DIVI)
-      OINVOH.set("UHYEA4",YEA4)
-      OINVOH.set("UHEXIN",EXIN)
+      OINVOH.set("UHDIVI",divi)
+      OINVOH.set("UHYEA4",yea4)
+      OINVOH.set("UHEXIN",exin)
       queryOINVOH.readAll(OINVOH, 4, 1, {DBContainer recordOINVOH->
-        RXIN = recordOINVOH.getString("UHRXIN")
+        rxin = recordOINVOH.getString("UHRXIN")
       })
     }
 
     if(xDebug) {
       logger.debug("Param Update Statut")
-      logger.debug("Low = " + LOW)
-      logger.debug("High = " + HIGH)
-      logger.debug("CLow = " + CLOW)
-      logger.debug("CHigh = " + CHIGH)
-      logger.debug("RXIN = " + RXIN)
+      logger.debug("Low = " + low)
+      logger.debug("High = " + high)
+      logger.debug("CLow = " + clow)
+      logger.debug("CHigh = " + chigh)
+      logger.debug("RXIN = " + rxin)
     }
 
     DBAction updatOCHEAD00 = database.table("OCHEAD").index("00").selection( "OCCHNO").build()
     DBContainer updOCHEAD = updatOCHEAD00.getContainer()
     updOCHEAD.set("OCCONO", currentCompany)
     updOCHEAD.set("OCWHLO", inWHLO)
-    updOCHEAD.set("OCREPN", REPN)
-    updOCHEAD.set("OCCUNO", CUNO)
+    updOCHEAD.set("OCREPN", repn)
+    updOCHEAD.set("OCCUNO", cuno)
     if(!updatOCHEAD00.readLock(updOCHEAD, updateCallBackOCHEAD)){
 
     }
@@ -487,11 +491,11 @@ public class EXT490 extends ExtendM3Batch {
     }
     LocalDateTime timeOfCreation = LocalDateTime.now()
     int changeNumber = lockedResult.get("OCCHNO")
-    lockedResult.set("OCRESL", LOW)
-    lockedResult.set("OCRESH", HIGH)
-    lockedResult.set("OCCRSB", CLOW)
-    lockedResult.set("OCCRSH", CHIGH)
-    if(RXIN.trim()!=""){
+    lockedResult.set("OCRESL", low)
+    lockedResult.set("OCRESH", high)
+    lockedResult.set("OCCRSB", clow)
+    lockedResult.set("OCCRSH", chigh)
+    if(rxin.trim()!=""){
       lockedResult.set("OCCRSB", 2)
       lockedResult.set("OCCRSH", 2)
     }
@@ -504,34 +508,34 @@ public class EXT490 extends ExtendM3Batch {
   // outDataOCLINE80 :: Retrieve OCLINE80
   Closure<?> outDataOCLINE80 = { DBContainer OCLINE80 ->
     if (xDebug) {
-      logger.debug("Low Before = " + LOW)
-      logger.debug("High Before = " + HIGH)
+      logger.debug("Low Before = " + low)
+      logger.debug("High Before = " + high)
     }
     if (xFirst == false) {
-      LOW = OCLINE80.get("ODREST")
+      low = OCLINE80.get("ODREST")
       xFirst = true
     }
-    HIGH = OCLINE80.get("ODREST")
+    high = OCLINE80.get("ODREST")
     if (xDebug) {
-      logger.debug("Low After = " + LOW)
-      logger.debug("High After = " + HIGH)
+      logger.debug("Low After = " + low)
+      logger.debug("High After = " + high)
     }
   }
 
   // outDataOCLINE30 :: Retrieve OCLINE30
   Closure<?> outDataOCLINE30 = { DBContainer OCLINE30 ->
     if(xDebug) {
-      logger.debug("CLow Before = " + CLOW)
-      logger.debug("CHigh Before = " + CHIGH)
+      logger.debug("CLow Before = " + clow)
+      logger.debug("CHigh Before = " + chigh)
     }
     if(xFirst == false ){
-      CLOW = OCLINE30.get("ODCRES") as Integer
+      clow = OCLINE30.get("ODCRES") as Integer
       xFirst = true
     }
-    CHIGH = OCLINE30.get("ODCRES") as Integer
+    chigh = OCLINE30.get("ODCRES") as Integer
     if(xDebug) {
-      logger.debug("CLow After = " + CLOW)
-      logger.debug("CHigh After = " + CHIGH)
+      logger.debug("CLow After = " + clow)
+      logger.debug("CHigh After = " + chigh)
     }
 
   }
@@ -545,27 +549,27 @@ public class EXT490 extends ExtendM3Batch {
   // Get UCOS and SAPR from MITTRA
   private void getUCOSandSAPRFromMITTRA(){
     attributenumber = 0
-    RSCD = ""
+    rscd = ""
     if(xDebug) {
       logger.debug("Get UCOS and SAPR from MITTRA +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      logger.debug("REPN = " + REPN)
-      logger.debug("RELI = " + RELI)
-      logger.debug("ITNO = " + ITNO)
+      logger.debug("REPN = " + repn)
+      logger.debug("RELI = " + reli)
+      logger.debug("ITNO = " + itno)
     }
     convertREPNtoRIDN()
     if(xDebug) {
-      logger.debug("RIDN = " + RIDN)
+      logger.debug("RIDN = " + ridn)
     }
     DBAction queryMITTRA40 = database.table("MITTRA").index("40").selection("MTTTYP","MTTRQT",  "MTATNB", "MTTRPR", "MTRSCD").build()
     DBContainer MITTRA40 = queryMITTRA40.getContainer()
     MITTRA40.set("MTCONO",currentCompany)
     MITTRA40.set("MTRORC",3)
-    MITTRA40.set("MTRORN", RIDN)
-    MITTRA40.set("MTRORL", RELI)
+    MITTRA40.set("MTRORN", ridn)
+    MITTRA40.set("MTRORL", reli)
     MITTRA40.set("MTRORX", 0)
     MITTRA40.set("MTWHLO", inWHLO)
-    MITTRA40.set("MTITNO", ITNO)
-    if (!queryMITTRA40.readAll(MITTRA40, 7, nbMaxRecord, outDataMITTRA40)){
+    MITTRA40.set("MTITNO", itno)
+    if (!queryMITTRA40.readAll(MITTRA40, 7, NB_MAX_RECORD, outDataMITTRA40)){
 
     }
     if(attributenumber==0){
@@ -573,9 +577,9 @@ public class EXT490 extends ExtendM3Batch {
       DBContainer MITTRA30 = queryMITTRA30.getContainer()
       MITTRA30.set("MTCONO",currentCompany)
       MITTRA30.set("MTTTYP",93)
-      MITTRA30.set("MTRIDN", RIDN)
-      MITTRA30.set("MTRIDL", RELI)
-      if (!queryMITTRA30.readAll(MITTRA30, 4, nbMaxRecord, outDataMITTRA30)){
+      MITTRA30.set("MTRIDN", ridn)
+      MITTRA30.set("MTRIDL", reli)
+      if (!queryMITTRA30.readAll(MITTRA30, 4, NB_MAX_RECORD, outDataMITTRA30)){
 
       }
     }
@@ -585,22 +589,22 @@ public class EXT490 extends ExtendM3Batch {
   // outDataMITTRA :: Retrieve MITTRA
   Closure<?> outDataMITTRA = { DBContainer MITTRA ->
     double oTRQT =  MITTRA.get("MTTRQT") as double
-    TRQT =  TRQT + oTRQT
-    Integer TRDT = MITTRA.get("MTTRDT") as Integer
-    rscdMITTRA = MITTRA.get("MTRSCD")
+    trqt =  trqt + oTRQT
+    Integer trdt = MITTRA.get("MTTRDT") as Integer
+    rscdMittra = MITTRA.get("MTRSCD")
     if(xDebug) {
       logger.debug("Lecture MITTRA +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      logger.debug("TRQT = " + TRQT)
-      logger.debug("RSCD MITTRA= " + rscdMITTRA)
+      logger.debug("TRQT = " + trqt)
+      logger.debug("RSCD MITTRA= " + rscdMittra)
     }
 
-    if(REQ3>0 && TRDT == currentDate){
+    if(req3>0 && trdt == currentDate){
       flagReq3 = true
     }
-    if(REQ4>0 && TRDT == currentDate){
+    if(req4>0 && trdt == currentDate){
       flagReq3 = true
     }
-    if(REQ5>0 && TRDT == currentDate){
+    if(req5>0 && trdt == currentDate){
       flagReq5 = true
     }
   }
@@ -657,13 +661,13 @@ public class EXT490 extends ExtendM3Batch {
     DBContainer EXT390 = queryEXT390.getContainer()
     EXT390.set("EXCONO",currentCompany)
     EXT390.set("EXWHLO",inWHLO)
-    EXT390.set("EXREPN",REPN)
-    EXT390.set("EXCUNO",CUNO)
+    EXT390.set("EXREPN",repn)
+    EXT390.set("EXCUNO",cuno)
     if (queryEXT390.read(EXT390)){
       zret = EXT390.get("EXZRET")
     }
 
-    MNS260MIAddMBMInit( "3", "OPT2", "DOC_RETOUR", "RETOUR", "MBM", "1", "DOC", "ZRET", zret, "REPN", REPN as String, "WHLO", inWHLO)
+    MNS260MIAddMBMInit( "3", "OPT2", "DOC_RETOUR", "RETOUR", "MBM", "1", "DOC", "ZRET", zret, "REPN", repn as String, "WHLO", inWHLO)
 
     if(savedBMIN!=""){
       MNS260MIAddMBMInitLRFld(savedBMIN, "IDM", "1", "AE", "Accounting_Entity")
@@ -690,13 +694,13 @@ public class EXT490 extends ExtendM3Batch {
     DBContainer EXT390 = queryEXT390.getContainer()
     EXT390.set("EXCONO",currentCompany)
     EXT390.set("EXWHLO",inWHLO)
-    EXT390.set("EXREPN",REPN)
-    EXT390.set("EXCUNO",CUNO)
+    EXT390.set("EXREPN",repn)
+    EXT390.set("EXCUNO",cuno)
     if (queryEXT390.read(EXT390)){
       zret = EXT390.get("EXZRET")
     }
 
-    MNS260MIAddMBMInit( "2", "OPT2", "DOC_RETOUR", "RETOUR", "MBM", "1", "DOC", "ZRET", zret, "REPN", REPN as String, "WHLO", inWHLO)
+    MNS260MIAddMBMInit( "2", "OPT2", "DOC_RETOUR", "RETOUR", "MBM", "1", "DOC", "ZRET", zret, "REPN", repn as String, "WHLO", inWHLO)
 
     if(savedBMIN!=""){
       MNS260MIAddMBMInitLRFld(savedBMIN, "IDM", "1", "AE", "Accounting_Entity")
@@ -781,8 +785,8 @@ public class EXT490 extends ExtendM3Batch {
     DBContainer EXT391 = queryEXT391.getContainer()
     EXT391.set("EXCONO",currentCompany)
     EXT391.set("EXWHLO",inWHLO)
-    EXT391.set("EXREPN",REPN)
-    EXT391.set("EXRELI",RELI)
+    EXT391.set("EXREPN",repn)
+    EXT391.set("EXRELI",reli)
     if (queryEXT391.read(EXT391)){
       oZDS1 = EXT391.get("EXZDC1")
       oZDS2 = EXT391.get("EXZDC2")
@@ -797,11 +801,11 @@ public class EXT490 extends ExtendM3Batch {
     } else {
       odiscount = (1 - (oZDS1/100))
     }
-    cSAPR = SAPR * odiscount
+    cSapr = sapr * odiscount
     if(xDebug) {
       logger.debug("Taux decote = " + odiscount)
-      logger.debug("SAPR = " + SAPR)
-      logger.debug("SAPR calculé = " + cSAPR)
+      logger.debug("SAPR = " + sapr)
+      logger.debug("SAPR calculé = " + cSapr)
     }
   }
 
@@ -810,12 +814,12 @@ public class EXT490 extends ExtendM3Batch {
     if(xDebug) {
       logger.debug("Update OCLINE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     }
-    DBAction updOCLINE = database.table("OCLINE").index("00").selection("ODREST", "ODCRES", "ODREQ0", "ODREQ1", "ODREQ2", "ODREQ5", "ODREQ7")build()
+    DBAction updOCLINE = database.table("OCLINE").index("00").selection("ODREST", "ODCRES", "ODREQ0", "ODREQ1", "ODREQ2", "ODREQ5", "ODREQ7").build()
     DBContainer OCLINE00 = updOCLINE.getContainer()
     OCLINE00.set("ODCONO", currentCompany)
     OCLINE00.set("ODWHLO", inWHLO)
-    OCLINE00.set("ODREPN", REPN)
-    OCLINE00.set("ODRELI", RELI)
+    OCLINE00.set("ODREPN", repn)
+    OCLINE00.set("ODRELI", reli)
     if(!updOCLINE.readLock(OCLINE00, updateCallBackOCLINE)){}
   }
 
@@ -823,119 +827,119 @@ public class EXT490 extends ExtendM3Batch {
   Closure<?> updateCallBackOCLINE = { LockedResult lockedResult ->
     LocalDateTime timeOfCreation = LocalDateTime.now()
     String oREST = lockedResult.get("ODREST")
-    String WKREST = " "
-    boolean WFCRES = false
-    int WKCRES = 0
+    String wkrest = " "
+    boolean wfcres = false
+    int wkcres = 0
     double changeREQ7 = lockedResult.get("ODREQ7") as double
     double oREQ5 = lockedResult.get("ODREQ5") as double
     double oREQ2 = lockedResult.get("ODREQ2") as double
     double oREQ1 = lockedResult.get("ODREQ1") as double
     double oREQ0 = lockedResult.get("ODREQ0") as double
-    double XREQ1
-    XREQ1 = oREQ5 + changeREQ7 + REQT
-    double XREQ7
-    XREQ7 = changeREQ7 + REQT
+    double xreq1
+    xreq1 = oREQ5 + changeREQ7 + reqt
+    double xreq7
+    xreq7 = changeREQ7 + reqt
     if(xDebug) {
       logger.debug("oREQ0 = " + oREQ0)
       logger.debug("oREQ1 = " + oREQ1)
       logger.debug("oREQ2 = " + oREQ2)
       logger.debug("oREQ5 = " + oREQ5)
       logger.debug("oREQ7 = " + changeREQ7)
-      logger.debug("XREQ1 = " + XREQ1)
-      logger.debug("XREQ7 = " + XREQ7)
+      logger.debug("XREQ1 = " + xreq1)
+      logger.debug("XREQ7 = " + xreq7)
     }
     int changeNumber = lockedResult.get("ODCHNO")
-    lockedResult.set("ODREQ7", XREQ7)
-    if(WKREST==" "){
+    lockedResult.set("ODREQ7", xreq7)
+    if(wkrest==" "){
       if(oREST=="99"){
-        WKREST = "99"
+        wkrest = "99"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREST=="90"){
-        WKREST = "90"
+        wkrest = "90"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREQ0 == 0 && oREQ1 == 0){
-        WKREST = "05"
+        wkrest = "05"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREQ0 == 0 && oREQ1 > 0 && oREQ1==oREQ2){
-        WKREST = "22"
+        wkrest = "22"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREQ0 == 0 && oREQ1 > 0 && oREQ2==0){
-        WKREST = "33"
+        wkrest = "33"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREQ0 == 0 && oREQ1 >= 0 && oREQ1>oREQ2){
-        WKREST = "23"
+        wkrest = "23"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREQ0 > 0 && oREQ1 == 0){
-        WKREST = "11"
+        wkrest = "11"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREQ0 > 0 && oREQ1 >= oREQ0  && oREQ1==oREQ2){
-        WKREST = "22"
+        wkrest = "22"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREQ0 > 0 && oREQ1 >= oREQ0  && oREQ1>oREQ2 && oREQ2!=0){
-        WKREST = "23"
+        wkrest = "23"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREQ0 > 0 && oREQ1 >= oREQ0  && oREQ2==0){
-        WKREST = "33"
+        wkrest = "33"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREQ0 > 0 && oREQ1==oREQ2){
-        WKREST = "12"
+        wkrest = "12"
       }
     }
-    if(WKREST==" "){
+    if(wkrest==" "){
       if(oREQ0 > 0 && oREQ1>oREQ2){
-        WKREST = "13"
+        wkrest = "13"
       }
     }
-    if(WKREST==" "){
-      WKREST = "99"
+    if(wkrest==" "){
+      wkrest = "99"
     }
-    if(WFCRES == false){
-      if(XREQ7==0){
-        WKCRES = 0
-        WFCRES = true
+    if(wfcres == false){
+      if(xreq7==0){
+        wkcres = 0
+        wfcres = true
       }
     }
-    if(WFCRES == false){
-      if(XREQ7 > 0 && XREQ7 < oREQ1) {
-        WKCRES = 1
-        WFCRES = true
+    if(wfcres == false){
+      if(xreq7 > 0 && xreq7 < oREQ1) {
+        wkcres = 1
+        wfcres = true
       }
     }
-    if(WFCRES == false){
-      if((XREQ7 > 0 && XREQ7 == oREQ1) || XREQ1 != oREQ1) {
-        WKCRES = 2
-        WFCRES = true
+    if(wfcres == false){
+      if((xreq7 > 0 && xreq7 == oREQ1) || xreq1 != oREQ1) {
+        wkcres = 2
+        wfcres = true
       }
     }
-    if(WFCRES == false){
-      WKCRES = 0
+    if(wfcres == false){
+      wkcres = 0
     }
     if(xDebug) {
-      logger.debug("WKREST = " + WKREST)
-      logger.debug("WKCRES = " + WKCRES)
+      logger.debug("WKREST = " + wkrest)
+      logger.debug("WKCRES = " + wkcres)
     }
-    lockedResult.set("ODREST", WKREST)
-    lockedResult.set("ODCRES", WKCRES)
+    lockedResult.set("ODREST", wkrest)
+    lockedResult.set("ODCRES", wkcres)
     lockedResult.setInt("ODLMDT", timeOfCreation.format(DateTimeFormatter.ofPattern("yyyyMMdd")) as Integer)
     lockedResult.setInt("ODCHNO", changeNumber + 1)
     lockedResult.set("ODCHID", program.getUser())
@@ -946,9 +950,9 @@ public class EXT490 extends ExtendM3Batch {
   private void OIS100MIAddBatchHead(){
     if(xDebug) {
       logger.debug("OIS100MI AddBatchHead")
-      logger.debug("CUNO = " + CUNO + " / ORTP = " + ORTP + " / FACI = " + FACI + " / CUOR = " + REPN)
+      logger.debug("CUNO = " + cuno + " / ORTP = " + ortp + " / FACI = " + faci + " / CUOR = " + repn)
     }
-    Map<String, String> paramOIS100MIAddBatchHead = ["CUNO": CUNO, "ORTP": ORTP, "FACI": FACI, "CUOR": REPN as String]
+    Map<String, String> paramOIS100MIAddBatchHead = ["CUNO": cuno, "ORTP": ortp, "FACI": faci, "CUOR": repn as String]
     Closure<?> rOIS100MIAddBatchHead = {Map<String, String> response ->
       if(response.error != null){
         IN60 = true
@@ -963,14 +967,14 @@ public class EXT490 extends ExtendM3Batch {
 
   // Add Batch Line
   private void OIS100MIAddBatchLine(){
-    double wORQT = 0 - REQT
+    double wORQT = 0 - reqt
     if(xDebug) {
       logger.debug("OIS100MI AddBatchLine")
-      logger.debug("REQT = " + REQT)
+      logger.debug("REQT = " + reqt)
       logger.debug("wREQT = " + wORQT)
-      logger.debug("ORNO = " + savedORNO + " / ITNO = " + ITNO + " / WHLO = " + inWHLO + " / SAPR = " + cSAPR + " / CUOR = " + REPN + " / ORQT = " + wORQT + " / RSCD = " + rscdMITTRA)
+      logger.debug("ORNO = " + savedORNO + " / ITNO = " + itno + " / WHLO = " + inWHLO + " / SAPR = " + cSapr + " / CUOR = " + repn + " / ORQT = " + wORQT + " / RSCD = " + rscdMittra)
     }
-    Map<String, String> paramOIS100MIAddBatchLine = ["ORNO": savedORNO, "ITNO": ITNO, "WHLO": inWHLO, "SAPR": cSAPR as String, "CUOR": REPN as String, "ORQT": wORQT as String, "RSCD": rscdMITTRA]
+    Map<String, String> paramOIS100MIAddBatchLine = ["ORNO": savedORNO, "ITNO": itno, "WHLO": inWHLO, "SAPR": cSapr as String, "CUOR": repn as String, "ORQT": wORQT as String, "RSCD": rscdMittra]
     Closure<?> rOIS100MIAddBatchLine = {Map<String, String> response ->
       if(response.error != null){
         IN60 = true
