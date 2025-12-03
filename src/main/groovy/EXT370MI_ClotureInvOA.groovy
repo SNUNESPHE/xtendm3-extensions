@@ -13,9 +13,12 @@ Revision History:
   Ya'Sin Figuelia                2024-11-15    1.2                  Add update status PUST in MPHEAD
   ANDRIANARIVELO Tovonirina      2025-09-04    1.2                  Review for validation
   ANDRIANARIVELO Tovonirina      2025-11-17    1.3                  Update code according to the validation process
+  ANDRIANARIVELO Tovonirina      2025-12-01    1.4                  Update code according to the validation process
 ******************************************************************************************/
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+
+
 
 public class ClotureInvOA extends ExtendM3Transaction {
 
@@ -57,6 +60,7 @@ public class ClotureInvOA extends ExtendM3Transaction {
     inPNLS = mi.in.get('PNLS') as Integer
     inREPN = mi.in.get('REPN') as Integer
     inRELP = mi.in.get('RELP') as Integer
+
     //Select record in FGRECL
     DBAction dbaFGRECL = database.table('FGRECL').index('00').build()
     DBContainer conFGRECL = dbaFGRECL.getContainer()
@@ -79,6 +83,9 @@ public class ClotureInvOA extends ExtendM3Transaction {
       lockedResult.set('F2ICAC', 0.0)
       lockedResult.set('F2IVQT', 0.0)
       lockedResult.set('F2IVQA', 0.0)
+      lockedResult.set('F2LMDT', entryDate)
+      lockedResult.set('F2CHNO', (Integer)lockedResult.get('F2CHNO') + 1)
+      lockedResult.set('F2CHID', program.getUser())
       lockedResult.update()
     })
 
@@ -102,9 +109,7 @@ public class ClotureInvOA extends ExtendM3Transaction {
     })
 
     //Update Status PUSL and PUST to 75
-    updateStatusMPHEAD(entryDate)
-
-
+    updateStatusMphead(entryDate)
     DBAction dbaFGINLI = database.table('FGINLI')
       .index('20')
       .selection('F5SINO', 'F5INYR', 'F5INLP')
@@ -114,13 +119,13 @@ public class ClotureInvOA extends ExtendM3Transaction {
     conFGINLI.set('F5PUNO', inPUNO)
     conFGINLI.set('F5PNLI', inPNLI)
     conFGINLI.set('F5PNLS', inPNLS)
-    // conFGINLI.set('F5DIVI', inDIVI)
 
     if (!dbaFGINLI.readAll(conFGINLI, 4, maxRecords, callback)) {
       mi.error('Record does not exist in FGINLI')
       return
     }
   }
+  
   /**
    *  @Description: Get SINO ,INYR, INLP And call EXT370MI.DelLineOA
    *  @params: records
@@ -132,14 +137,15 @@ public class ClotureInvOA extends ExtendM3Transaction {
     outINYR = container.get('F5INYR').toString()
     outINLP = container.get('F5INLP').toString()
     //Call API to delete record in FGINLI
-    EXT370MIApiCall()
+    ext370miApiCall()
   }
+  
   /**
    *  @Description: Call DelLineOA transaction from EXT370MI
    *  @params: records
    *  @Output:
    */
-  void EXT370MIApiCall() {
+  void ext370miApiCall() {
     Map<String, String> paras =  [
       'CONO':"${inCONO}".toString(), 'DIVI':"${inDIVI}".toString(),
       'SUNO':"${inSUNO}".toString(),'SINO':"${outSINO}".toString(),
@@ -156,7 +162,7 @@ public class ClotureInvOA extends ExtendM3Transaction {
    *  @params:
    *  @Output:
    */
-  void updateStatusMPHEAD(int entryDate) {
+  void updateStatusMphead(int entryDate) {
     //Select record in MPHEAD
     DBAction dbaMPHEAD = database.table('MPHEAD').index('00').build()
     DBContainer conMPHEAD = dbaMPHEAD.getContainer()
@@ -165,7 +171,7 @@ public class ClotureInvOA extends ExtendM3Transaction {
     //update Status
     dbaMPHEAD.readLock(conMPHEAD, { LockedResult lockedResult ->
       //check if the is line PUST  equal 85
-      if (!checkifLinePUST85()) {
+      if (!checkIfLinePust85()) {
         lockedResult.set('IAPUST', '75')
       }
       lockedResult.set('IAPUSL', '75')
@@ -175,12 +181,13 @@ public class ClotureInvOA extends ExtendM3Transaction {
       lockedResult.update()
     })
   }
+  
    /**
    *  @Description: Check line status high 85 exist
    *  @params:
    *  @Output:
    */
-  boolean checkifLinePUST85() {
+  boolean checkIfLinePust85() {
     int maxRecords =  mi.getMaxRecords() <= 0 || mi.getMaxRecords() >= 1000 ? 1000 : mi.getMaxRecords()
 
     DBAction dbaMPLINE = database.table('MPLINE').index('00')

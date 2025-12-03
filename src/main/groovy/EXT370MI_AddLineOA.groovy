@@ -12,17 +12,17 @@ Revision History:
   Ya'Sin Figuelia                2024-10-23    1.1                  Update code according to the validation process
   ANDRIANARIVELO Tovonirina      2025-09-04    1.2                  Review for validation
   ANDRIANARIVELO Tovonirina      2025-11-17    1.3                  Update code according to the validation process
+  ANDRIANARIVELO Tovonirina      2025-12-01    1.4                  Update code according to the validation process
 ******************************************************************************************/
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
-import java.time.LocalDate
 
 public class AddLineOA extends ExtendM3Transaction {
 
   private final MIAPI mi
   private final DatabaseAPI database
   private final ProgramAPI program
+  
   private int inCONO     //Company
   private String inDIVI  //Division
   private String inSUNO  //Supplier
@@ -37,12 +37,13 @@ public class AddLineOA extends ExtendM3Transaction {
   private double inIVOC  //Inv price pur
   private double inIVNA  //Inv net amount
   private double inIVDI  //Invoiced disc
-  private String inPUUN  //PO U/M
-  private String inPPUN  //Purch price U/M
-  private int inPUCD     //Purch price qty
   private double inIVCW  //Invoiced C/W
   private double inSERA  //Rcdv exch rate
-  private int inVTCD     //VAT code
+
+  private int outVTCD    //VAT code
+  private int outPUCD    //Purch price qty
+  private String outPUUN //PO U/M
+  private String outPPUN //Purch price U/M
 
   public AddLineOA(MIAPI mi, DatabaseAPI database, ProgramAPI program) {
     this.mi = mi
@@ -71,14 +72,26 @@ public class AddLineOA extends ExtendM3Transaction {
     inIVNA = ((mi.in.get('IVNA') == null) ? 0 : mi.in.get('IVNA')) as double
     inIVDI = ((mi.in.get('IVDI') == null) ? 0 : mi.in.get('IVDI')) as double
 
-    inPUUN = mi.inData.get('PUUN') == null ? '' :  mi.inData.get('PUUN').trim()
-    inPPUN = mi.inData.get('PPUN') == null ? '' :  mi.inData.get('PPUN').trim()
-    inPUCD = ((mi.in.get('PUCD') == null) ? 0 : mi.in.get('PUCD')) as Integer
+
     inIVCW = ((mi.in.get('IVCW') == null) ? 0 : mi.in.get('IVCW')) as double
     inSERA = ((mi.in.get('SERA') == null) ? 0 : mi.in.get('SERA')) as double
-    inVTCD = ((mi.in.get('VTCD') == null) ? 0 : mi.in.get('VTCD')) as Integer
     //Check input Validation
     if (checkInputValid()) {
+      
+      //Select record from MPLINE
+      DBAction dbaMPLINE = database.table('MPLINE').index('00').selection('IBPUUN', 'IBPPUN', 'IBPUCD', 'IBVTCD').build()
+      DBContainer conMPLINE = dbaMPLINE.getContainer()
+      conMPLINE.set('IBPUNO', inPUNO)
+      conMPLINE.set('IBPNLI', inPNLI)
+      conMPLINE.set('IBPNLS', inPNLS)
+      conMPLINE.set('IBCONO', inCONO)
+
+      //Get record from MPLINE
+      outPUUN = conMPLINE.get('IBPUUN').toString() 
+      outPPUN = conMPLINE.get('IBPPUN').toString()
+      outPUCD = conMPLINE.get('IBPUCD').toString() as Integer
+      outVTCD = conMPLINE.get('IBVTCD').toString() as Integer
+      
       //Select record if FGINLI
       DBAction dbaFGINLI = database.table('FGINLI').index('00').build()
       DBContainer conFGINLI = dbaFGINLI.getContainer()
@@ -154,29 +167,28 @@ public class AddLineOA extends ExtendM3Transaction {
         if (inIVDI) {
           conFGINLI.set('F5IVDI', inIVDI)
         }
-        if (inPUUN) {
-          conFGINLI.set('F5PUUN', inPUUN)
+        if (outPUUN) {
+          conFGINLI.set('F5PUUN', outPUUN)
         }
-        if (inPPUN) {
-          conFGINLI.set('F5PPUN', inPPUN)
+        if (outPPUN) {
+          conFGINLI.set('F5PPUN', outPPUN)
         }
-        if (inPUCD) {
-          conFGINLI.set('F5PUCD', inPUCD)
+        if (outPUCD) {
+          conFGINLI.set('F5PUCD', outPUCD)
         }
         if (inIVCW) {
           conFGINLI.set('F5IVCW', inIVCW)
         }
       
-          conFGINLI.set('F5ADDG', 0.0)
-       
-          conFGINLI.set('F5IVLC', 0)
+        conFGINLI.set('F5ADDG', 0.0)
+        conFGINLI.set('F5IVLC', 0)
         
         if (inSERA) {
           conFGINLI.set('F5SERA', inSERA)
         }
 
-        if (inVTCD) {
-          conFGINLI.set('F5VTCD', inVTCD)
+        if (outVTCD) {
+          conFGINLI.set('F5VTCD', outVTCD)
         }
       
         conFGINLI.set('F5LMDT', entryDate)
@@ -186,8 +198,8 @@ public class AddLineOA extends ExtendM3Transaction {
         conFGINLI.set('F5CHID', program.getUser())
         //Insert record in FGINLI
         if(dbaFGINLI.insert(conFGINLI)){
-           mi.outData.put("RSLT","OK");
-           mi.write();
+           mi.outData.put("RSLT","OK")
+           mi.write()
         }
       }
     }
@@ -198,16 +210,16 @@ public class AddLineOA extends ExtendM3Transaction {
   * @params -
   * @returns - true/false
   */
-  Boolean checkInputValid() {
-    return valideSUNO() && valideSINO() && validePUUN_PPUN_VTCD() && validePUNO_PNLI_PNLS_REPN_RELP()
+  boolean checkInputValid() {
+    return  valideSuno() && valideSino() && validePunoPnliPnlsRepnRelp()
   }
 
-/**
+  /**
    * @description - Validate SUNO
    * @params -
    * @returns - true/false
    */
-  Boolean valideSUNO() {
+  boolean valideSuno() {
     DBAction dbCIDMAS = database.table('CIDMAS').index('00').build()
     DBContainer conCIDMAS = dbCIDMAS.getContainer()
     conCIDMAS.set('IDCONO', inCONO)
@@ -219,12 +231,13 @@ public class AddLineOA extends ExtendM3Transaction {
     return true
   }
 
+
   /**
     * @Description: Validate SINO
     * @params: -
     * @Output : true/false
-    */
-  Boolean valideSINO() {
+  */
+  boolean valideSino() {
     if (!inSUNO.isEmpty()) {
       DBAction dbFGINLI = database.table('FGINLI').index('00').build()
       DBContainer conFGINLI = dbFGINLI.getContainer()
@@ -240,31 +253,11 @@ public class AddLineOA extends ExtendM3Transaction {
   }
 
   /**
-    * @Description: Validate PUUN, PPUN, PUCD, VTCD
-    * @params: -
-    * @Output : true/false
-    */
-  Boolean validePUUN_PPUN_VTCD() {
-    DBAction dbaMPLINE = database.table('MPLINE').index('00').selection('IBPUUN', 'IBPPUN', 'IBVTCD').build()
-    DBContainer conMPLINE = dbaMPLINE.getContainer()
-    conMPLINE.set('IBCONO', inCONO)
-    conMPLINE.set('IBPUNO', inPUNO)
-    conMPLINE.set('IBPNLI', inPNLI)
-    conMPLINE.set('IBPNLS', inPNLS)
-    if (!dbaMPLINE.read(conMPLINE)) {
-      mi.error('Record does not exist in MPLINE')
-      return false
-    }
-
-    return true
-  }
-
-  /**
    *  @Description:Validate PUNO, PNLI, PNLS, REPN, RELP
    *  @params: -
    *  @Output : true/false
    */
-  Boolean validePUNO_PNLI_PNLS_REPN_RELP() {
+  boolean validePunoPnliPnlsRepnRelp() {
     DBAction dbaFGRECL = database.table('FGRECL').index('00').build()
     DBContainer conFGRECL = dbaFGRECL.getContainer()
     conFGRECL.set('F2CONO', inCONO)
@@ -282,7 +275,4 @@ public class AddLineOA extends ExtendM3Transaction {
     }
     return true
   }
-
-
-
 }

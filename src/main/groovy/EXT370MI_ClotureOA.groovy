@@ -13,6 +13,7 @@ Revision History:
   Ya'Sin Figuelia                2024-11-15    1.2                  Add update status PUST in MPHEAD
   ANDRIANARIVELO Tovonirina      2025-09-04    1.2                  Review for validation
   ANDRIANARIVELO Tovonirina      2025-11-17    1.3                  Update code according to the validation process
+  ANDRIANARIVELO Tovonirina      2025-12-01    1.4                  Update code according to the validation process
 ******************************************************************************************/
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -23,7 +24,6 @@ public class ClotureOA extends ExtendM3Transaction {
   private final DatabaseAPI database
   private final ProgramAPI program
   private final MICallerAPI miCaller
-  private final ExtensionAPI extension
   
   private int inCONO    //Company
   private String inPUNO //Purchase Order
@@ -40,14 +40,10 @@ public class ClotureOA extends ExtendM3Transaction {
   private String outIVOC //Inv price pur
   private String outIVNA //Inv net amount
   private String outIVDI //Invoiced disc
-  private String outPUUN //PO U/M
-  private String outPPUN //Purch price U/M
-  private int outPUCD    //Purch price qty
   private double outIVCW //Invoiced C/W
   private double outSERA //Rcdv exch rate
-  private int outVTCD    //VAT code
   private int nbRecord   //number of record
-  private int nbRecordPUST85 // number of record having PUST equal to 85
+  private int nbRecordPust85 // number of record having PUST equal to 85
   private int maxRecords //Nombre d'enregistrement maximum
   private boolean isAllLineOk // check if all line is OK
 
@@ -64,7 +60,7 @@ public class ClotureOA extends ExtendM3Transaction {
     LocalDateTime dateTime = LocalDateTime.now()
     int entryDate = dateTime.format(DateTimeFormatter.ofPattern('yyyyMMdd')).toInteger()
     nbRecord = 0
-    nbRecordPUST85 = 0
+    nbRecordPust85 = 0
     isAllLineOk = true
     inCONO = mi.in.get('CONO') as Integer == null ? program.LDAZD.get('CONO') as Integer : mi.in.get('CONO') as Integer
     inDIVI = mi.inData.get('DIVI') == null ? '' :  mi.inData.get('DIVI').trim()
@@ -103,22 +99,19 @@ public class ClotureOA extends ExtendM3Transaction {
       lockedResult.set('F2ICAC', outRCAC)
       lockedResult.set('F2IVQT', outRPQT)
       lockedResult.set('F2IVQA', outRPQA)
+      lockedResult.set('F2LMDT', entryDate)
+      lockedResult.set('F2CHNO', (Integer)lockedResult.get('F2CHNO') + 1)
+      lockedResult.set('F2CHID', program.getUser())
       lockedResult.update()
     })
     //Select record from MPLINE
-    DBAction dbaMPLINE = database.table('MPLINE').index('00').selection('IBPUUN', 'IBPPUN', 'IBPUCD', 'IBVTCD').build()
+    DBAction dbaMPLINE = database.table('MPLINE').index('00').build()
     DBContainer conMPLINE = dbaMPLINE.getContainer()
     conMPLINE.set('IBPUNO', inPUNO)
     conMPLINE.set('IBPNLI', inPNLI)
     conMPLINE.set('IBPNLS', inPNLS)
     conMPLINE.set('IBCONO', inCONO)
 
-    //Get record from MPLINE
-    outPUUN = conMPLINE.get('IBPUUN').toString()
-    outPPUN = conMPLINE.get('IBPPUN').toString()
-    outPUCD = conMPLINE.get('IBPUCD').toString() as Integer
-    outVTCD = conMPLINE.get('IBVTCD').toString() as Integer //CVATPC
-    //Update  Status PUST to 85 in MPLINE
     dbaMPLINE.readLock(conMPLINE, { LockedResult lockedResult ->
       lockedResult.set('IBIVQA', outRPQA)
       lockedResult.set('IBIDAT', entryDate)
@@ -130,7 +123,7 @@ public class ClotureOA extends ExtendM3Transaction {
       lockedResult.update()
     })
     //Update  Status PUST to 85 in MPHEAD
-    updateStatusMPHEAD(entryDate)
+    updateStatusMphead(entryDate)
     DBAction query = database.table('FGINLI')
       .index('00')
       .build()
@@ -139,13 +132,10 @@ public class ClotureOA extends ExtendM3Transaction {
     container.set('F5PUNO', inPUNO)
     query.readAll(container, 2, maxRecords, releasedItemProcessor)
     //Compute SINO
-    outSINO = nbRecord + 1
-    outSINO = "0000${outSINO}"
-    
-    EXT370MIApiCall()
-      
-    
+    outSINO = "0000${nbRecord + 1}"
+    ext370miApiCall()
   }
+  
   /**
    *  @Description: Get the number of record in FGINLI from the PUNO
    *  @params:
@@ -154,34 +144,31 @@ public class ClotureOA extends ExtendM3Transaction {
   Closure<?> releasedItemProcessor = { DBContainer container ->
     nbRecord = nbRecord + 1
   }
+  
     /**
    *  @Description: Call AddLineOA transaction from EXT370MI
    *  @params: records
    *  @Output:
    */
-  void EXT370MIApiCall() {
-   
+  void ext370miApiCall() {
     Map<String, String> paras =  [ 'CONO':"${inCONO}".toString(),
     'DIVI':"${inDIVI}".toString(), 'SUNO':"${inSUNO}".toString(),
     'SINO':"${outSINO}".toString(), 'PUNO':"${inPUNO}".toString(),
     'PNLI':"${inPNLI}".toString(), 'PNLS':"${inPNLS}".toString(),
     'REPN':"${inREPN}".toString(), 'RELP':"${inRELP}".toString(),
     'IVQT':"${outRPQT}".toString(), 'IVQA':"${outRPQA}".toString(),
-    'IVOC':"${outIVNA}".toString(),'IVNA':"${outIVOC}".toString(),
-    'IVDI':"${outIVDI}".toString(), 'PUUN':"${outPUUN}".toString(),
-    'PPUN':"${outPPUN}".toString(),'PUCD':"${outPUCD}".toString(),
-    'IVCW':"${outIVCW}".toString(),'SERA':"${outSERA}".toString(),
-    'VTCD':"${outVTCD}".toString()]
-
-
+    'IVOC':"${outIVOC}".toString(),'IVNA':"${outIVNA}".toString(),
+    'IVDI':"${outIVDI}".toString(),'IVCW':"${outIVCW}".toString(),
+    'SERA':"${outSERA}".toString()]
     miCaller.call('EXT370MI', 'AddLineOA', paras, {})
   }
+  
    /**
    *  @Description: Update Status PUST to 85 in MPHEAD
    *  @params:
    *  @Output:
    */
-  void updateStatusMPHEAD(int entryDate) {
+  void updateStatusMphead(int entryDate) {
     //Select record in MPHEAD
     DBAction dbaMPHEAD = database.table('MPHEAD').index('00').build()
     DBContainer conMPHEAD = dbaMPHEAD.getContainer()
@@ -190,7 +177,7 @@ public class ClotureOA extends ExtendM3Transaction {
     //update Status
     dbaMPHEAD.readLock(conMPHEAD, { LockedResult lockedResult ->
       lockedResult.set('IAPUST', '85')
-      if (checkAllLinePUST85()) {
+      if (checkAllLinePust85()) {
         lockedResult.set('IAPUSL', '85')
       }
       lockedResult.set('IALMDT', entryDate)
@@ -200,12 +187,13 @@ public class ClotureOA extends ExtendM3Transaction {
     })
     
   }
+  
   /**
    *  @Description: Check all line status low is 85
    *  @params:
    *  @Output:
    */
-  boolean checkAllLinePUST85() {
+  boolean checkAllLinePust85() {
     DBAction dbaMPLINE = database.table('MPLINE').index('00').
     selection('IBPUST').build()
     DBContainer conMPLINE = dbaMPLINE.getContainer()
@@ -216,19 +204,20 @@ public class ClotureOA extends ExtendM3Transaction {
       return
     }
     else {
-      if (nbRecordPUST85 == 1) {
+      if (nbRecordPust85 == 1) {
         return true
       }
-      else if (nbRecordPUST85 > 1) {
+      else if (nbRecordPust85 > 1) {
         return isAllLineOk
       }
     }
   }
+  
   Closure<?> callbackMPLINE = { DBContainer container ->
     if (container.get('IBPUST').toString().trim() != '85') {
       isAllLineOk = false
     }
-    nbRecordPUST85 = nbRecordPUST85 + 1
+    nbRecordPust85 = nbRecordPust85 + 1
   }
 
 }
