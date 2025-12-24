@@ -150,7 +150,7 @@ public class UpdDetail extends ExtendM3Transaction {
       return false
     }
 
-    if (!validatePynoCino(inCONO, inPYNO, inCINO)) {
+    if (!validatePynoCino(inPYNO, inCINO)) {
       return false
     }
 
@@ -190,19 +190,22 @@ public class UpdDetail extends ExtendM3Transaction {
    * Validate the Payer (PYNO) against the OCUSMA table.
    * @return true if valid, false otherwise
    */
-  boolean validatePynoCino(int cono, String pyno, String cino) {
+  boolean validatePynoCino(String pyno, String cino) {
+    
+    ExpressionFactory expressionFactory = database.getExpressionFactory("FSLEDG")
+    ExpressionFactory expression = expressionFactory.eq("PYNO", pyno).and(expressionFactory.eq("CINO", cino))
+    
     DBAction dbaFsledg = database.table("FSLEDG")
-        .index("12")
+        .index("10")
         .build()
 
     DBContainer conFsledg = dbaFsledg.getContainer()
-    conFsledg.set("ESCONO", cono)
-    conFsledg.set("ESPYNO", pyno)
-    conFsledg.set("ESCINO", cino)
+    conFsledg.set("ESCONO", inCONO)
+    conFsledg.set("ESDIVI", inDIVI)
 
     boolean found = false
 
-    dbaFsledg.readAll(conFsledg, 3, 1, { DBContainer container ->
+    dbaFsledg.readAll(conFsledg, 2, 1, { DBContainer container ->
         found = true
     })
     if (!found) {
