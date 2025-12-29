@@ -38,6 +38,11 @@ public class AddCardV2 extends ExtendM3Transaction {
     }
     inDIVI = mi.inData.get("DIVI").isBlank() ? program.LDAZD.get("DIVI") : mi.inData.get("DIVI").trim()
     inTYLI = mi.inData.get("TYLI").isBlank() ? "" : mi.inData.get("TYLI").trim()
+    
+    // validate input variables
+    if (!validateConoDivi(inCONO, inDIVI)) {
+      return
+    }
 
     DBAction dbaEXT806 = database.table("EXT807").index("00").build()
     DBContainer conEXT806 = dbaEXT806.createContainer()
@@ -63,5 +68,21 @@ public class AddCardV2 extends ExtendM3Transaction {
     dbaEXT806.insert(conEXT806)
     mi.outData.put("RSLT", "OK")
     mi.write()
+  }
+  
+  /**
+   * Validate the Company (CONO) and the Division (DIVI) against the CMNDIV table.
+   * @return true if valid, false otherwise
+   */
+  boolean validateConoDivi(int cono, String divi) {
+    DBAction dbaCMNDIV = database.table("CMNDIV").index("00").build()
+    DBContainer conCMNDIV = dbaCMNDIV.getContainer()
+    conCMNDIV.set("CCCONO", cono)
+    conCMNDIV.set("CCDIVI", divi)
+    if (!dbaCMNDIV.read(conCMNDIV)) {
+      mi.error("Division: " + divi.toString() + " does not exist in Company " + cono)
+      return false
+    }
+    return true
   }
 }
