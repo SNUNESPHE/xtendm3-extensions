@@ -26,9 +26,9 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
   private int inYEA4 //Year
   private int inJRNO //Journal number
   private int inJSNO //Journal sequence
-  private String VONO //Voucher Number
+  private String VONO = "" //Voucher Number
   private int inRMNB //Remitance number
-  public int maxRecords //10000
+  public int maxRecords //1000
 
   public String compteCollectifClient = "" //Client collective account number
   public String compteDedieFactor = "" //Bank account Factor
@@ -262,8 +262,7 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
 
         String efno = getEffectNumber(Integer.parseInt(output.get(i).get("YEA4")), Integer.parseInt(output.get(i).get("JRNO")), Integer.parseInt(output.get(i).get("JSNO")))
         output.get(i).put("NCRE", efno)
-        String remittance = getEffectRemittance(Integer.parseInt(output.get(i).get("YEA4")), Integer.parseInt(output.get(i).get("JRNO")))
-        output.get(i).put("RMNO", remittance)
+        output.get(i).put("RMNO", inRMNB.toString())
 
         output.get(i).put("ACSO", getBAI1NAI1(output.get(i).get("PYNO"), output.get(i).get("NCRE"), output.get(i).get("INYR"), "NAI1"))
         output.get(i).put("BKAC", getBAI1NAI1(output.get(i).get("PYNO"), output.get(i).get("NCRE"), output.get(i).get("INYR"), "BAI1"))
@@ -349,31 +348,6 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
     boolean result = false
     query.readAll(container, 3, 1, { DBContainer container1 ->
       result = true
-    })
-    return result
-  }
-
-  /**
-   * @getEffectRemittance - Get Remittance Number 
-   * @params - yea4, jrno
-   * @returns - 
-   */
-  String getEffectRemittance(int yea4, int jrno) {
-
-    DBAction query = database.table("FSLEDX")
-      .index("00")
-      .selection("ESSEXI")
-      .build()
-    DBContainer container = query.getContainer()
-    container.set("ESCONO", inCONO)
-    container.set("ESDIVI", inDIVI)
-    container.set("ESYEA4", yea4)
-    container.set("ESJRNO", jrno)
-    container.set("ESSEXN", 210)
-
-    String result = ""
-    query.readAll(container, 5, 1, { DBContainer container1 ->
-      result = container1.get("ESSEXI").toString().trim()
     })
     return result
   }
@@ -543,8 +517,9 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
     container.set("F3CUER", cuer)
     container.set("F3FLDI", "F3A030")
 
+    int nbrOfRecords = 50
     List<String> results = new ArrayList<>()
-    query.readAll(container, 4, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 4, nbrOfRecords, { DBContainer container1 ->
         if (container1.get("F3AL30") != null) {
             results.add(container1.get("F3AL30").toString().trim())
         }
@@ -595,9 +570,10 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
     DBContainer container = query.getContainer()
     container.set("F1CONO", inCONO)
     container.set("F1FILE", "FCHACC")
-
+    
+    int nbrOfRecords = 50
     List < String > results = new ArrayList < > ()
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, nbrOfRecords, { DBContainer container1 ->
       if (container1.get("F1PK03") != null) {
         results.add(container1.get("F1PK03").toString().trim())
       }
@@ -645,7 +621,7 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
     container.set("CCDIVI", inDIVI)
 
     String result = ""
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, 1, { DBContainer container1 ->
       if (outBound.equals("CCD6")) {
         result = container1.get("CCCCD6").toString()
       } else if (outBound.equals("CONM")) {
@@ -828,9 +804,10 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
     DBContainer container = query.getContainer()
     container.set("F1CONO", inCONO)
     container.set("F1FILE", "FCHACC")
-
+    
+    int nbrOfRecords = 50
     List < String > results = new ArrayList < > ()
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, nbrOfRecords, { DBContainer container1 ->
       if (container1.get("F1PK03") != null) {
         results.add(container1.get("F1PK03").toString().trim())
       }
@@ -918,7 +895,7 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
 
       DBAction queryCheck = database.table("FGLEDG")
         .index("00")
-        .selection("")
+        .selection()
         .matching(expCheck)
         .build()
       DBContainer conCheck = queryCheck.getContainer()
