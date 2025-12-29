@@ -145,38 +145,19 @@ public class AddLinesChqNC extends ExtendM3Transaction {
    * @returns - array
    */
   void readFGLEDG(int yea4, int jrno, String vono) {
-    ExpressionFactory expCheck = database.getExpressionFactory("FGLEDG")
-    expCheck = expCheck.eq("EGVONO", vono).and(expCheck.eq("EGAIT1", compteCollectifClient))
-
-    DBAction queryCheck = database.table("FGLEDG")
-      .index("00")
-      .selection("EGAIT1")
-      .matching(expCheck)
-      .build()
-
-    DBContainer contCheck = queryCheck.getContainer()
-    contCheck.set("EGCONO", inCONO)
-    contCheck.set("EGDIVI", inDIVI)
-    contCheck.set("EGYEA4", yea4)
-    contCheck.set("EGJRNO", jrno)
-
-    boolean found411150 = false
-    queryCheck.readAll(contCheck, 4, 1, { DBContainer conFGLEDG ->
-      found411150 = true
-    })
-    
-    if (found411150) {
-    mi.error("Le journal contient une ligne cédée")
-    return 
+    //validate Check if it has an assigned invoice
+    if(validateCheck(vono, yea4, jrno)){
+      mi.error("Le journal contient une ligne cédée")
+      return 
     }
-
-    ExpressionFactory expAll = database.getExpressionFactory("FGLEDG")
-    expAll = expAll.eq("EGVONO", vono)
+    
+    ExpressionFactory expression = database.getExpressionFactory("FGLEDG")
+    expression = expression.eq("EGVONO", vono)
 
     DBAction queryAll = database.table("FGLEDG")
       .index("00")
       .selection("EGVONO", "EGVSER", "EGACDT", "EGCUCD", "EGCUAM", "EGVTXT", "EGAIT1", "EGFEID", "EGFNCN", "EGTRCD", "EGDBCR", "EGJSNO")
-      .matching(expAll)
+      .matching(expression)
       .build()
 
     DBContainer contAll = queryAll.getContainer()
@@ -921,6 +902,34 @@ public class AddLinesChqNC extends ExtendM3Transaction {
     String formattedDate = currentDate.format(formatter)
 
     return Integer.parseInt(formattedDate)
+  }
+  
+  /**
+   * Validate check number
+   * @return true if valid, false otherwise
+   */
+  boolean validateCheck(String vono, int yea4, int jrno) {
+    ExpressionFactory expression = database.getExpressionFactory("FGLEDG")
+    expression = expression.eq("EGVONO", vono).and(expression.eq("EGAIT1", compteCollectifClient))
+
+    DBAction queryCheck = database.table("FGLEDG")
+      .index("00")
+      .selection("EGAIT1")
+      .matching(expression)
+      .build()
+
+    DBContainer contCheck = queryCheck.getContainer()
+    contCheck.set("EGCONO", inCONO)
+    contCheck.set("EGDIVI", inDIVI)
+    contCheck.set("EGYEA4", yea4)
+    contCheck.set("EGJRNO", jrno)
+
+    boolean found411150 = false
+    queryCheck.readAll(contCheck, 4, 1, { DBContainer conFGLEDG ->
+      found411150 = true
+    })
+    
+    return found411150
   }
 
   /**
