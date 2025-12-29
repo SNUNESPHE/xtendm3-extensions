@@ -38,10 +38,10 @@ public class AddInfoCat extends ExtendM3Transaction {
     //inputs
     inCONO = mi.inData.get("CONO").isBlank() ? program.LDAZD.get("CONO") as Integer : mi.in.get("CONO") as Integer
     inDIVI = mi.inData.get("DIVI").isBlank() ? program.LDAZD.get("DIVI") : mi.inData.get("DIVI").trim()
-    inJRNO = mi.in.get("JRNO") as Integer
-    inJSNO = mi.in.get("JSNO") as Integer
-    inYEA4 = mi.in.get("YEA4") as Integer
-    inGEXI = mi.inData.get("GEXI")
+    inJRNO = mi.in.get("JRNO") as Integer == null ? 0 : mi.in.get("JRNO") as Integer
+    inJSNO = mi.in.get("JSNO") as Integer == null ? 0 : mi.in.get("JSNO") as Integer
+    inYEA4 = mi.in.get("YEA4") as Integer == null ? 0 : mi.in.get("YEA4") as Integer
+    inGEXI = mi.inData.get("GEXI").isBlank() ? "" : mi.inData.get("GEXI").trim()
 
     DBAction query = database.table("FGLEDG")
       .index("00")
