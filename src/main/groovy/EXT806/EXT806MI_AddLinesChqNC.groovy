@@ -21,12 +21,16 @@ public class AddLinesChqNC extends ExtendM3Transaction {
   private final ProgramAPI program
   private final DatabaseAPI database
   private final MICallerAPI miCaller
-  public int inCONO //Company
-  public String inDIVI //Division
+  public int inCONO // Company
+  public String inDIVI // Division
   public String inCKNO // Check number
   public String inBKID // Bank Id
   public String rawCkno // bkid + ckno
-  public int maxRecords //10000
+  public int YEA4 // year
+  public int JRNO // journal number
+  public int JSNO // journal sequence
+  public String VONO = "" // voucher number
+  public int maxRecords //1000
 
   public String compteCollectifClient = "" //Client collective account number
   public String compteDedieFactor = "" //Bank account Factor
@@ -34,7 +38,6 @@ public class AddLinesChqNC extends ExtendM3Transaction {
   public String ccd6 = "" //Company number
   public String banquesFactor = "" //Bank of Factor
 
-  private ArrayList < HashMap < String, String >> ecritureBancaire = new ArrayList < > () //Array containing accounting entries
   private ArrayList < HashMap < String, String >> output = new ArrayList < > () //Array containing accounting entries
   private ArrayList < HashMap < String, String >> output103104 = new ArrayList < > () //Array containing accounting entries
   private List < String > exclusionList //List of accounts number
@@ -50,7 +53,7 @@ public class AddLinesChqNC extends ExtendM3Transaction {
   }
 
   public void main() {
-    maxRecords = mi.getMaxRecords() <= 0 || mi.getMaxRecords() > 5000 ? 5000 : mi.getMaxRecords()
+    maxRecords = mi.getMaxRecords() <= 0 || mi.getMaxRecords() > 1000 ? 1000 : mi.getMaxRecords()
 
     // Initialization
     if (!mi.inData.get("CONO").isBlank()) {
@@ -82,7 +85,9 @@ public class AddLinesChqNC extends ExtendM3Transaction {
       numeroCompteKO = lstCUGEX1()
 
       readYEA4JRNOJSNO()
-      readLine()
+      if (!VONO.trim().equals("")) {
+        readFGLEDG()
+      }
       readFSLEDG()
       addCustomFields()
       addInfoCat()
@@ -113,30 +118,12 @@ public class AddLinesChqNC extends ExtendM3Transaction {
 
     HashMap < String, String > tmp
     query.readAll(container, 2, 1, { DBContainer container1 ->
-      tmp = new HashMap < String, String > ()
+      JRNO = Integer.parseInt(container1.get("ESJRNO").toString())
+      JSNO = Integer.parseInt(container1.get("ESJSNO").toString())
+      YEA4 = Integer.parseInt(container1.get("ESYEA4").toString())
 
-      tmp.put("CONO", container1.get("ESCONO").toString())
-      tmp.put("DIVI", container1.get("ESDIVI").toString())
-      tmp.put("JRNO", container1.get("ESJRNO").toString())
-      tmp.put("JSNO", container1.get("ESJSNO").toString())
-      tmp.put("YEA4", container1.get("ESYEA4").toString())
-
-      String vono = getVono(Integer.parseInt(container1.get("ESYEA4").toString()), Integer.parseInt(container1.get("ESJRNO").toString()), Integer.parseInt(container1.get("ESJSNO").toString()))
-      tmp.put("VONO", vono)
-
-      ecritureBancaire.add(tmp)
+      VONO = getVono(YEA4, JRNO, JSNO)
     })
-  }
-
-  /**
-   * @readLine - get lines from FGLEDG   
-   * @params
-   * @returns
-   */
-  void readLine() {
-    for (int i = 0; i < ecritureBancaire.size(); i++) {
-      readFGLEDG(Integer.parseInt(ecritureBancaire.get(i).get("YEA4")), Integer.parseInt(ecritureBancaire.get(i).get("JRNO")), ecritureBancaire.get(i).get("VONO"))
-    }
   }
 
   /**
@@ -144,15 +131,15 @@ public class AddLinesChqNC extends ExtendM3Transaction {
    * @params
    * @returns - array
    */
-  void readFGLEDG(int yea4, int jrno, String vono) {
+  void readFGLEDG() {
     //validate Check if it has an assigned invoice
-    if(validateCheck(vono, yea4, jrno)){
+    if(validateCheck()){
       mi.error("Le journal contient une ligne cédée")
       return 
     }
     
     ExpressionFactory expression = database.getExpressionFactory("FGLEDG")
-    expression = expression.eq("EGVONO", vono)
+    expression = expression.eq("EGVONO", VONO)
 
     DBAction queryAll = database.table("FGLEDG")
       .index("00")
@@ -163,8 +150,8 @@ public class AddLinesChqNC extends ExtendM3Transaction {
     DBContainer contAll = queryAll.getContainer()
     contAll.set("EGCONO", inCONO)
     contAll.set("EGDIVI", inDIVI)
-    contAll.set("EGYEA4", yea4)
-    contAll.set("EGJRNO", jrno)
+    contAll.set("EGYEA4", YEA4)
+    contAll.set("EGJRNO", JRNO)
 
     queryAll.readAll(contAll, 4, maxRecords, { DBContainer conFGLEDG ->
       String numeroCompte = conFGLEDG.get("EGAIT1").toString().trim()
@@ -478,8 +465,9 @@ public class AddLinesChqNC extends ExtendM3Transaction {
     container.set("F3CUER", cuer)
     container.set("F3FLDI", "F3A030")
 
+    int nbrOfRecords = 50
     List < String > results = new ArrayList < > ()
-    query.readAll(container, 4, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 4, nbrOfRecords, { DBContainer container1 ->
       if (container1.get("F3AL30") != null) {
         results.add(container1.get("F3AL30").toString().trim())
       }
@@ -531,8 +519,9 @@ public class AddLinesChqNC extends ExtendM3Transaction {
     container.set("F1CONO", inCONO)
     container.set("F1FILE", "FCHACC")
 
+    int nbrOfRecords = 50
     List < String > results = new ArrayList < > ()
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, nbrOfRecords, { DBContainer container1 ->
       if (container1.get("F1PK03") != null) {
         results.add(container1.get("F1PK03").toString().trim())
       }
@@ -617,7 +606,7 @@ public class AddLinesChqNC extends ExtendM3Transaction {
     container.set("CCDIVI", inDIVI)
 
     String result = ""
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, 1, { DBContainer container1 ->
       if (outBound.equals("CCD6")) {
         result = container1.get("CCCCD6").toString()
       } else if (outBound.equals("CONM")) {
@@ -752,8 +741,9 @@ public class AddLinesChqNC extends ExtendM3Transaction {
     container.set("F1CONO", inCONO)
     container.set("F1FILE", "FCHACC")
 
+    int nbrOfRecords = 50
     List < String > results = new ArrayList < > ()
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, nbrOfRecords, { DBContainer container1 ->
       if (container1.get("F1PK03") != null) {
         results.add(container1.get("F1PK03").toString().trim())
       }
@@ -908,9 +898,9 @@ public class AddLinesChqNC extends ExtendM3Transaction {
    * Validate check number
    * @return true if valid, false otherwise
    */
-  boolean validateCheck(String vono, int yea4, int jrno) {
+  boolean validateCheck() {
     ExpressionFactory expression = database.getExpressionFactory("FGLEDG")
-    expression = expression.eq("EGVONO", vono).and(expression.eq("EGAIT1", compteCollectifClient))
+    expression = expression.eq("EGVONO", VONO).and(expression.eq("EGAIT1", compteCollectifClient))
 
     DBAction queryCheck = database.table("FGLEDG")
       .index("00")
@@ -921,8 +911,8 @@ public class AddLinesChqNC extends ExtendM3Transaction {
     DBContainer contCheck = queryCheck.getContainer()
     contCheck.set("EGCONO", inCONO)
     contCheck.set("EGDIVI", inDIVI)
-    contCheck.set("EGYEA4", yea4)
-    contCheck.set("EGJRNO", jrno)
+    contCheck.set("EGYEA4", YEA4)
+    contCheck.set("EGJRNO", JRNO)
 
     boolean found411150 = false
     queryCheck.readAll(contCheck, 4, 1, { DBContainer conFGLEDG ->
