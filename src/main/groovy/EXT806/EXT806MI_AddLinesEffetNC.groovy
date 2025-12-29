@@ -26,6 +26,7 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
   private int inYEA4 //Year
   private int inJRNO //Journal number
   private int inJSNO //Journal sequence
+  private String VONO //Voucher Number
   private int inRMNB //Remitance number
   public int maxRecords //10000
 
@@ -35,7 +36,6 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
   public String ccd6 = "" //Company number
   public String banquesFactor = "" //Bank of Factor
 
-  private ArrayList < HashMap < String, String >> ecritureBancaire = new ArrayList < > () //Array containing accounting entries
   private ArrayList < HashMap < String, String >> output = new ArrayList < > () //Array containing accounting entries
   private ArrayList < HashMap < String, String >> output103104 = new ArrayList < > () //Array containing accounting entries
   private List < String > exclusionList //List of accounts number
@@ -52,7 +52,7 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
   }
 
   public void main() {
-    maxRecords = mi.getMaxRecords() <= 0 || mi.getMaxRecords() >= 5000 ? 5000 : mi.getMaxRecords()
+    maxRecords = mi.getMaxRecords() <= 0 || mi.getMaxRecords() >= 1000 ? 1000 : mi.getMaxRecords()
 
     // Initialization
     if (!mi.inData.get("CONO").isBlank()) {
@@ -88,7 +88,9 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
 
       if (validateRMNB()) {
         readEcritureBancaire()
-        readLine()
+        if (!VONO.trim().equals("")) {
+          readFGLEDG()
+        }
         readFSLEDG()
         addCustomFields()
         render()
@@ -118,23 +120,15 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
     container.set("R1JSNO", inJSNO)    
 
     HashMap < String, String > tmp
-    query.readAll(container, 5, maxRecords, { DBContainer container1 ->
-      String gexi = getFGLEDX(Integer.parseInt(container1.get("R1YEA4").toString()), Integer.parseInt(container1.get("R1JRNO").toString()), Integer.parseInt(container1.get("R1JSNO").toString()), 500) //Check if the line has already been processed
+    query.readAll(container, 5, 1, { DBContainer container1 ->
+
+      String gexi = getFGLEDX(inYEA4, inJRNO, inJSNO, 500) //Check if the line has already been processed
 
       if (gexi.trim().isBlank()) {
-        tmp = new HashMap < String, String > ()
-        tmp.put("CONO", container1.get("R1CONO").toString())
-        tmp.put("DIVI", container1.get("R1DIVI").toString())
-        tmp.put("YEA4", container1.get("R1YEA4").toString())
-        tmp.put("JRNO", container1.get("R1JRNO").toString())
-        tmp.put("JSNO", container1.get("R1JSNO").toString())
-        tmp.put("VONO", container1.get("R1VONO").toString())
-
-        ecritureBancaire.add(tmp)
+        VONO = container1.get("R1VONO").toString()
 
         //AddInfoCat API add info for processed line in FGLEDX
-
-        Map < String, String > params = ["CONO": container1.get("R1CONO").toString(), "DIVI": container1.get("R1DIVI").toString(), "YEA4": container1.get("R1YEA4").toString(), "JRNO": container1.get("R1JRNO").toString(), "JSNO": container1.get("R1JSNO").toString(), "GEXI": "99999999999999999999"]
+        Map < String, String > params = ["CONO": inCONO.toString(), "DIVI": inDIVI, "YEA4": inYEA4.toString(), "JRNO": inJRNO.toString(), "JSNO": inJSNO.toString(), "GEXI": "99999999999999999999"]
         String resultAddInfoCat = null
         Closure < String > callback = {
           Map < String,
@@ -149,61 +143,31 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
   }
 
   /**
-   * @readLine - get lines from FGLEDG   
-   * @params
-   * @returns
-   */
-  void readLine() {
-    for (int i = 0; i < ecritureBancaire.size(); i++) {
-      readFGLEDG(Integer.parseInt(ecritureBancaire.get(i).get("YEA4")), Integer.parseInt(ecritureBancaire.get(i).get("JRNO")), ecritureBancaire.get(i).get("VONO"))
-    }
-  }
-
-  /**
    * @readFGLEDG - get associated lines from FGLEDG   
    * @params
    * @returns - array
    */
-  void readFGLEDG(int yea4, int jrno, String vono) {
-  ExpressionFactory expCheck = database.getExpressionFactory("FGLEDG")
-  expCheck = expCheck.eq("EGVONO", vono).and(expCheck.eq("EGAIT1", compteCollectifClient))
-
-  DBAction queryCheck = database.table("FGLEDG")
-      .index("00")
-      .selection("EGAIT1")
-      .matching(expCheck)
-      .build()
-
-  DBContainer contCheck = queryCheck.getContainer()
-  contCheck.set("EGCONO", inCONO)
-  contCheck.set("EGDIVI", inDIVI)
-  contCheck.set("EGYEA4", yea4)
-  contCheck.set("EGJRNO", jrno)
-
-  boolean found411150 = false
-  queryCheck.readAll(contCheck, 4, 1, { DBContainer conFGLEDG ->
-    found411150 = true
-  })
-  
-  if (found411150) {
-    mi.error("Le journal contient une ligne cédée")
-    return 
-  }
+  void readFGLEDG() {
+  //validate Check if it has an assigned invoice
+    if(validateEffect()){
+      mi.error("Le journal contient une ligne cédée")
+      return 
+    }
     
-  ExpressionFactory expAll = database.getExpressionFactory("FGLEDG")
-  expAll = expAll.eq("EGVONO", vono)
+  ExpressionFactory expression = database.getExpressionFactory("FGLEDG")
+  expression = expression.eq("EGVONO", VONO)
 
   DBAction queryAll = database.table("FGLEDG")
       .index("00")
       .selection("EGVONO", "EGVSER", "EGACDT", "EGCUCD", "EGCUAM", "EGVTXT", "EGAIT1", "EGFEID", "EGFNCN", "EGTRCD", "EGDBCR", "EGJSNO")
-      .matching(expAll)
+      .matching(expression)
       .build()
 
   DBContainer contAll = queryAll.getContainer()
   contAll.set("EGCONO", inCONO)
   contAll.set("EGDIVI", inDIVI)
-  contAll.set("EGYEA4", yea4)
-  contAll.set("EGJRNO", jrno)
+  contAll.set("EGYEA4", inYEA4)
+  contAll.set("EGJRNO", inJRNO)
 
   queryAll.readAll(contAll, 4, maxRecords, { DBContainer conFGLEDG ->
 
@@ -1042,6 +1006,34 @@ public class AddLinesEffetNC extends ExtendM3Transaction {
     String formattedDate = currentDate.format(formatter)
 
     return Integer.parseInt(formattedDate)
+  }
+  
+  /**
+   * Validate effect number
+   * @return true if valid, false otherwise
+   */
+  boolean validateEffect() {
+    ExpressionFactory expression = database.getExpressionFactory("FGLEDG")
+    expression = expression.eq("EGVONO", VONO).and(expression.eq("EGAIT1", compteCollectifClient))
+
+    DBAction queryCheck = database.table("FGLEDG")
+      .index("00")
+      .selection("EGAIT1")
+      .matching(expression)
+      .build()
+
+    DBContainer contCheck = queryCheck.getContainer()
+    contCheck.set("EGCONO", inCONO)
+    contCheck.set("EGDIVI", inDIVI)
+    contCheck.set("EGYEA4", inYEA4)
+    contCheck.set("EGJRNO", inJRNO)
+
+    boolean found411150 = false
+    queryCheck.readAll(contCheck, 4, 1, { DBContainer conFGLEDG ->
+      found411150 = true
+    })
+    
+    return found411150
   }
 
   /**
