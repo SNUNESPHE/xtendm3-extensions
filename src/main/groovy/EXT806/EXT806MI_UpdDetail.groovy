@@ -140,6 +140,11 @@ public class UpdDetail extends ExtendM3Transaction {
     })
   }
 
+  /**
+   * @description - Validates input variables
+   * @params -
+   * @returns - true/false
+   */
   boolean validateInputVariables() {
 
     if (!validateConoDivi(inCONO, inDIVI)) {
