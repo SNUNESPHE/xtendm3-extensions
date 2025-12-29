@@ -26,7 +26,7 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
   private int inYEA4 //Year
   private int inJRNO //Journal number
   private int inJSNO //Journal sequence
-  public int maxRecords //10000
+  public int maxRecords //1000
   public String compteCollectifClient = "" //Client collective account number
   public String compteDedieFactor = "" //Bank account Factor
   public String conm = "" //Company name
@@ -47,7 +47,7 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
   }
 
   public void main() {
-    maxRecords = mi.getMaxRecords() <= 0 || mi.getMaxRecords() >= 5000 ? 5000 : mi.getMaxRecords()
+    maxRecords = mi.getMaxRecords() <= 0 || mi.getMaxRecords() >= 1000 ? 1000 : mi.getMaxRecords()
 
     // Initialisation
     if (!mi.inData.get("CONO").isBlank()) {
@@ -263,8 +263,9 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
     container.set("F3CUER", cuer)
     container.set("F3FLDI", "F3A030")
 
+    int nbrOfRecords = 50
     List<String> results = new ArrayList<>()
-    query.readAll(container, 4, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 4, nbrOfRecords, { DBContainer container1 ->
         if (container1.get("F3AL30") != null) {
             results.add(container1.get("F3AL30").toString().trim())
         }
@@ -338,7 +339,7 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
     container.set("CCDIVI", inDIVI)
 
     String result = ""
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, 1, { DBContainer container1 ->
       if (outBound.equals("CCD6")) {
         result = container1.get("CCCCD6").toString()
       } else if (outBound.equals("CONM")) {
@@ -551,8 +552,9 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
     container.set("F1CONO", inCONO)
     container.set("F1FILE", "FCHACC")
 
+    int nbrOfRecords = 50
     List < String > results = new ArrayList < > ()
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, nbrOfRecords, { DBContainer container1 ->
       if (container1.get("F1PK03") != null) {
         results.add(container1.get("F1PK03").toString().trim())
       }
