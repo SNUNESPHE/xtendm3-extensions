@@ -24,8 +24,8 @@ public class AddInfoCat extends ExtendM3Transaction {
   private int inYEA4 //Year
   private int inJRNO //Journal Number
   private int inJSNO //Journal Sequence
-  private int GEXN = 500 // GL Info Number
-  private int GEXS = 1 // GL Info Sequence Number
+  final int GEXN = 500 // GL Info Number
+  final int GEXS = 1 // GL Info Sequence Number
   private String inGEXI // Additionnal Info
 
   public AddInfoCat(MIAPI mi, ProgramAPI program, DatabaseAPI database) {
