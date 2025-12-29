@@ -27,7 +27,7 @@ public class AddLinesNonCede extends ExtendM3Transaction {
   private int inJRNO //Journal number
   private int inJSNO //Journal sequence
   private String VONO = "" //Voucher Number
-  public int maxRecords //10000
+  public int maxRecords //1000
 
   public String compteCollectifClient = "" //Client collective account number
   public String compteDedieFactor = "" //Bank account Factor
@@ -83,6 +83,7 @@ public class AddLinesNonCede extends ExtendM3Transaction {
       if (!VONO.trim().equals("")) {
         readFGLEDG()
       }
+      readFSLEDG()
       addCustomFields()
       render()
     }
@@ -158,12 +159,11 @@ public class AddLinesNonCede extends ExtendM3Transaction {
   contAll.set("EGJRNO", inJRNO)
 
   queryAll.readAll(contAll, 4, maxRecords, { DBContainer conFGLEDG ->
-
     String numeroCompte = conFGLEDG.get("EGAIT1").toString().trim()
     String feid = conFGLEDG.get("EGFEID").toString().trim()
 
     if (reglement.contains(feid) && !numeroCompteKO.contains(numeroCompte) && numeroCompte.startsWith("4")) {
-
+      
       HashMap<String, String> tmp = new HashMap<>()
       tmp.put("CCD6", ccd6)
       tmp.put("CONM", conm)
@@ -311,7 +311,6 @@ public class AddLinesNonCede extends ExtendM3Transaction {
         }
 
         add103104VirementNonCedee(i)
-
         add104ImpayeNonCedee(i)
       }
     }
@@ -403,8 +402,9 @@ public class AddLinesNonCede extends ExtendM3Transaction {
     container.set("F3CUER", cuer)
     container.set("F3FLDI", "F3A030")
 
+    int nbrOfRecords = 50
     List<String> results = new ArrayList<>()
-    query.readAll(container, 4, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 4, nbrOfRecords, { DBContainer container1 ->
         if (container1.get("F3AL30") != null) {
             results.add(container1.get("F3AL30").toString().trim())
         }
@@ -456,8 +456,9 @@ public class AddLinesNonCede extends ExtendM3Transaction {
     container.set("F1CONO", inCONO)
     container.set("F1FILE", "FCHACC")
 
+    int nbrOfRecords = 50
     List < String > results = new ArrayList < > ()
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, nbrOfRecords, { DBContainer container1 ->
       if (container1.get("F1PK03") != null) {
         results.add(container1.get("F1PK03").toString().trim())
       }
@@ -505,7 +506,7 @@ public class AddLinesNonCede extends ExtendM3Transaction {
     container.set("CCDIVI", inDIVI)
 
     String result = ""
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, 1, { DBContainer container1 ->
       if (outBound.equals("CCD6")) {
         result = container1.get("CCCCD6").toString()
       } else if (outBound.equals("CONM")) {
@@ -709,8 +710,9 @@ public class AddLinesNonCede extends ExtendM3Transaction {
     container.set("F1CONO", inCONO)
     container.set("F1FILE", "FCHACC")
 
+    int nbrOfRecords = 50
     List < String > results = new ArrayList < > ()
-    query.readAll(container, 2, maxRecords, { DBContainer container1 ->
+    query.readAll(container, 2, nbrOfRecords, { DBContainer container1 ->
       if (container1.get("F1PK03") != null) {
         results.add(container1.get("F1PK03").toString().trim())
       }
@@ -763,6 +765,7 @@ public class AddLinesNonCede extends ExtendM3Transaction {
     String dbcr = output.get(lineNumber).get("DBCR").trim()
     
     if (tyli.equals("103") && !ait1.trim().equals(compteCollectifClient) && (pycl.trim().equals("3") || pycl.trim().equals("0")) && dbcr.equals("C")) {
+      
       ExpressionFactory expCheck = database.getExpressionFactory("FGLEDG")
       expCheck = expCheck.eq("EGVONO", vono).and(expCheck.eq("EGVSER", vser)).and(expCheck.eq("EGFEID", feid)).and(expCheck.eq("EGAIT1", compteDedieFactor)).and(expCheck.eq("EGDBCR", "D"))
 
