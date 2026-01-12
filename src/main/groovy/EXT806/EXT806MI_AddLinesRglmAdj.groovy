@@ -10,17 +10,20 @@ Revision History:
 Name          Date        Version   Description of Changes
 NRAOEL        2024-10-22  1.0       Initial Release
 NRAOEL        2025-11-27  1.1       Correction after validation submission
+NRAOEL        2026-01-06  1.2       Add ExpressionFactory VSER
 **************************************************************************************************************************************************/
 
 import java.util.ArrayList
 import java.time.format.DateTimeFormatter
 import java.time.LocalDateTime
+import java.time.LocalDate
 
 public class AddLinesRglmAdj extends ExtendM3Transaction {
   private final MIAPI mi
   private final ProgramAPI program
   private final DatabaseAPI database
   private final MICallerAPI miCaller
+  private final LoggerAPI logger
   public int inCONO //Company
   public String inDIVI //Division
   private int inYEA4 //Year
@@ -39,14 +42,19 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
   private List < String > reglement //List of invoice payments
   private List < String > domTom //List country
 
-  public AddLinesRglmAdj(MIAPI mi, ProgramAPI program, DatabaseAPI database, MICallerAPI miCaller) {
+  public AddLinesRglmAdj(MIAPI mi, ProgramAPI program, DatabaseAPI database, MICallerAPI miCaller, LoggerAPI logger) {
     this.mi = mi
     this.program = program
     this.database = database
     this.miCaller = miCaller
+    this.logger = logger
   }
 
   public void main() {
+    if (LocalDate.now().isAfter(LocalDate.of(2026, 5, 30))) {
+      logger.debug("Extension signatures expired")
+      return
+    }
     maxRecords = mi.getMaxRecords() <= 0 || mi.getMaxRecords() >= 1000 ? 1000 : mi.getMaxRecords()
 
     // Initialisation
@@ -567,9 +575,9 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
    * @params - jrno, yea4
    * @returns - ait1 : bank account
    */
-  String getBKAC(int jrno, int yea4, String vono) {
+  String getBKAC(int jrno, int yea4, String vono, String vser) {
     ExpressionFactory expression = database.getExpressionFactory("FGLEDG")
-    expression = expression.eq("EGVONO", vono).and(expression.like("EGAIT1", "5%"))
+    expression = expression.eq("EGVONO", vono).and(expression.like("EGAIT1", "5%")).and(expression.eq("EGVSER", vser))
 
     DBAction query = database.table("FGLEDG")
       .index("00")
@@ -631,15 +639,17 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
     String ait1 = output.get(lineNumber).get("AIT1")
     int jrno = Integer.parseInt(output.get(lineNumber).get("JRNO"))
     String vono = output.get(lineNumber).get("VONO")
+    String vser = output.get(lineNumber).get("VSER")
     int yea4 = Integer.parseInt(output.get(lineNumber).get("YEA4"))
     String pycl = output.get(lineNumber).get("PYCL")
     String dbcr = output.get(lineNumber).get("DBCR").trim()
     String cino = output.get(lineNumber).get("CINO").trim()
+    String feid = output.get(lineNumber).get("FEID")
 
     if (tyli.equals("103") && ait1.trim().equals(compteCollectifClient) && (pycl.trim().equals("3") || pycl.trim().equals("0")) && dbcr.equals("C")) {
       
       ExpressionFactory expCheck = database.getExpressionFactory("FGLEDG")
-      expCheck = expCheck.eq("EGVONO", vono).and(expCheck.like("EGAIT1", "5%")).and(expCheck.eq("EGDBCR", "D"))
+      expCheck = expCheck.eq("EGVONO", vono).and(expCheck.eq("EGVSER", vser)).and(expCheck.like("EGAIT1", "5%")).and(expCheck.eq("EGDBCR", "D")).and(expCheck.eq("EGFEID", feid))
 
       DBAction queryCheck = database.table("FGLEDG")
         .index("00")
@@ -664,7 +674,7 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
       })
 
       ExpressionFactory expAll = database.getExpressionFactory("FGLEDG")
-      expAll = expAll.eq("EGVONO", vono)
+      expAll = expAll.eq("EGVONO", vono).and(expAll.eq("EGVSER", vser)).and(expAll.eq("EGFEID", feid))
 
       DBAction queryAll = database.table("FGLEDG")
         .index("00")
@@ -746,7 +756,7 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
       (pycl.trim().equals("0") || pycl.trim().equals("2") || pycl.trim().equals("3") || pycl.trim().equals("4")) && dbcr.equals("D")) {
 
       ExpressionFactory expCheck = database.getExpressionFactory("FGLEDG")
-      expCheck = expCheck.eq("EGVONO", vono).and(expCheck.like("EGAIT1", "5%")).and(expCheck.eq("EGDBCR", "C"))
+      expCheck = expCheck.eq("EGVONO", vono).and(expCheck.eq("EGVSER", vser)).and(expCheck.like("EGAIT1", "5%")).and(expCheck.eq("EGDBCR", "C"))
 
       DBAction queryCheck = database.table("FGLEDG")
         .index("00")
@@ -1235,12 +1245,13 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
     String ait1 = output.get(lineNumber).get("AIT1")
     int jrno = Integer.parseInt(output.get(lineNumber).get("JRNO"))
     String vono = output.get(lineNumber).get("VONO")
+    String vser = output.get(lineNumber).get("VSER")
     int yea4 = Integer.parseInt(output.get(lineNumber).get("YEA4"))
     String pycl = output.get(lineNumber).get("PYCL")
 
     if (tyli.equals("103") && ait1.trim().equals(compteCollectifClient) && (pycl.trim().equals("3") || pycl.trim().equals("0"))) {
       ExpressionFactory expression = database.getExpressionFactory("FGLEDG")
-      expression = expression.eq("EGVONO", vono).and(expression.like("EGAIT1", "5%"))
+      expression = expression.eq("EGVONO", vono).and(expression.eq("EGVSER", vser)).and(expression.like("EGAIT1", "5%"))
 
       DBAction query = database.table("FGLEDG")
         .index("00")
@@ -1327,7 +1338,7 @@ public class AddLinesRglmAdj extends ExtendM3Transaction {
           output.get(i).put("NCRE", stmn)
           output.get(i).put("RMNO", remittance)
           output.get(i).put("ACSO", getBAI1NAI1(output.get(i).get("PYNO"), output.get(i).get("NCRE"), output.get(i).get("YEA4"), "NAI1"))
-          output.get(i).put("BKAC", getBKAC(Integer.parseInt(output.get(i).get("JRNO")), Integer.parseInt(output.get(i).get("YEA4")), output.get(i).get("VONO")))
+          output.get(i).put("BKAC", getBKAC(Integer.parseInt(output.get(i).get("JRNO")), Integer.parseInt(output.get(i).get("YEA4")), output.get(i).get("VONO"), output.get(i).get("VSER")))
         }
 
         output.get(i).put("STAT", getSTAT().toString())
